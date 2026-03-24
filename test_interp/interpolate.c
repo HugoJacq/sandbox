@@ -3,7 +3,15 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_interp2d.h>
+#include <gsl/gsl_spline2d.h>
+
 #include "constant.h"
+
+
+
 
 void cart2pol(double x, double y, double rho, double phi) {
     rho = sqrt(x * x + y * y);
@@ -103,6 +111,9 @@ double interp_lin(double x[], double y[], int Nx, int Ny, double xi, double yi, 
   return Fi;
 
 
+// WIP
+// double interp_gsl(double x[], double y[], int Nx, int Ny, double xi, double yi, double F[]):
+//   const gsl_interp2d_type *T = gsl_interp2d_bilinear;
 
 
 
