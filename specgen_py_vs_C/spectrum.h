@@ -47,14 +47,12 @@ void pol2cart(double rho, double phi, double *x, double *y) {
 
 double randInRange(double min, double max)
 {
-  int RANDN;
-  RANDN = rand();
+  // int RANDN;
+  // RANDN = rand();
   //printf("rand() %d, RAND_MAX %d, min %f, max %f\n", RANDN, RAND_MAX, min, max);
 
-  return min + (RANDN / (double) (RAND_MAX) * (max - min + 1));
-  //return min + (rand() / (double) (RAND_MAX) * (max - min + 1));
-
-
+  //return min + (RANDN / (double) (RAND_MAX) * (max - min + 1));
+  return min + (rand() / (RAND_MAX+1.0) * (max - min));
 
 }
 
