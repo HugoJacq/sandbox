@@ -19,6 +19,12 @@ from scipy.interpolate import griddata
 import xarray as xr
 import xrft
 
+import os.path
+import sys
+# add libpy
+dirname = os.path.dirname(__file__)
+filename = os.path.join(dirname, '../libpy/')
+sys.path.append( filename )
 from fftlib import get_spec_1D
 
 L=200.
