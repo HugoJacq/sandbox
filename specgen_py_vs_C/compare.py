@@ -90,7 +90,7 @@ eta_py = np.zeros((N_grid,N_grid))
 for row in range(len(kx_py)):
     for col in range(len(ky_py)):
         index = row*len(kx_py) + col
-        index = col*len(kx_py) + row
+        #index = col*len(kx_py) + row
         datapy[row, col] = rawpy[index]
 for i in range(N_grid):
     for j in range(N_grid):
