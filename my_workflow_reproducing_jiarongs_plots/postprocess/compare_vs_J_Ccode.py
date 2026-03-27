@@ -31,10 +31,10 @@ dpi=200
 
 
 # My data
-pathH = './'
+pathH_C = './using_pprC/'
+pathH_f = './using_pprf90/'
 pathJ = "../../reproducing_jiarongs_plots/postprocess/"
 filedata = "data.nc"
-fileH = pathH + filedata
 fileJ = pathJ + filedata
 
 file_grads = ['dudz.nc','dudy.nc','dudx.nc','dvdz.nc','dvdy.nc','dvdx.nc','dwdz.nc','dwdy.nc', 'dwdx.nc']
@@ -53,7 +53,8 @@ at_t = [0, 20, 100, 120]
 
 
 # We build a dict, easier to process
-d_data = {"Hugo":xr.open_mfdataset([fileH]+file_grads+file_omeg+file_diss),
+d_data = {"Hugo_pprC":xr.open_mfdataset([pathH_C+file for file in ([filedata]+file_grads+file_omeg+file_diss)]),
+          "Hugo_pprf90":xr.open_mfdataset([pathH_f+file for file in ([filedata]+file_grads+file_omeg+file_diss)]),
           "Jiarong":xr.open_mfdataset([fileJ] + [pathJ+file for file in (file_grads+file_omeg+file_diss)])}
 
 
@@ -62,7 +63,7 @@ d_data = {"Hugo":xr.open_mfdataset([fileH]+file_grads+file_omeg+file_diss),
 """
 if True:
     print('\nVariance check')
-    clrs = ['b','g']
+    clrs = ['b','g','orange']
     fig, ax = plt.subplots(1,1,figsize = (3,3),constrained_layout=True,dpi=dpi)
     for k,name in enumerate(d_data.keys()):
         print('-> '+name)
@@ -84,7 +85,7 @@ if True:
 """
 if True:
     print('\nSpectrum evolution')
-    clrs = ['b','g']
+    clrs = ['b','g','orange']
     for it,time_ in enumerate(at_t):
         fig, ax = plt.subplots(1,1,figsize = (3,3),constrained_layout=True,dpi=dpi)
         ax.loglog(Js[it][:,0],Js[it][:,1], c='gray', ls='-', label="paper")
@@ -105,7 +106,7 @@ if True:
 if True:
     print('\nProfiles ')
     time_=120 # s
-    clrs = ['b','g']
+    clrs = ['b','g','orange']
     # Jiarong's data
     Jux_lagr = np.loadtxt(Jpath+'2025_fig7a_layer.txt',skiprows=1,delimiter=",")
     Jens_lagr = np.loadtxt(Jpath+'2025_fig7b_layer.txt',skiprows=1,delimiter=",")

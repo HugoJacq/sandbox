@@ -26,10 +26,6 @@ import time
 import xrft
 from scipy.fft import fft2, fftfreq
 
-from data_reader import read_data, build_grid
-from tools import *
-from diags import interpz, grad_velocities, vorticity, dissipation
-
 # add libpy
 import os.path
 import sys
@@ -37,15 +33,17 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, '../../libpy/')
 sys.path.append( filename )
 from fftlib import *
-
+from data_reader import read_data, build_grid
+from tools import *
+from diags import interpz, grad_velocities, vorticity, dissipation
 
 """
 ## General parameters
 """
-
 # My data
 #filename="/home/jacqhugo/basilisk/wiki/sandbox/hugoj/reproducing_jiarongs_plots/N10_P0.02_L15/out.nc"
-filename="/home/jacqhugo/basilisk/wiki/sandbox/hugoj/my_workflow_reproducing_jiarongs_plots/N10_L15_P0.02/out.nc"
+#filename="/home/jacqhugo/basilisk/wiki/sandbox/hugoj/my_workflow_reproducing_jiarongs_plots/N10_L15_P0.02/out.nc"
+filename="/home/jacqhugo/basilisk/wiki/sandbox/hugoj/my_workflow_reproducing_jiarongs_plots/using_pprf90/out.nc"
 # getting back Jiarong's data
 Jpath = "data_Jiarong/"
 save_nc = './data.nc'

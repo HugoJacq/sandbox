@@ -26,10 +26,6 @@ import time
 import xrft
 from scipy.fft import fft2, fftfreq
 
-from data_reader import read_data, build_grid
-from tools import *
-from diags import interpz, grad_velocities, vorticity, dissipation
-
 # add libpy
 import os.path
 import sys
@@ -37,7 +33,9 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, '../../libpy/')
 sys.path.append( filename )
 from fftlib import *
-
+from data_reader import read_data, build_grid
+from tools import *
+from diags import interpz, grad_velocities, vorticity, dissipation
 
 """
 ## General parameters
