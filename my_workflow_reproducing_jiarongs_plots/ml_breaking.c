@@ -228,37 +228,38 @@ event init(i =  0) {
 // but then there is the dt/dt_mean that I have to correct after
 //
 //event compute_horizontal_avg (i++; t<=tend+1e-10){
-event compute_horizontal_avg (t+=dt_mean; t<=tend+1e-10){
-  foreach(reduction(+:u_profile[:nl]))
-    foreach_layer(){
-      //u_profile[point.l] += u.x[] / (N*N) * dt / dt_mean;
-      u_profile[point.l] += u.x[] / (N*N); // * dt / dt_mean;
+// event compute_horizontal_avg (t+=dt_mean; t<=tend+1e-10){
+//   foreach(reduction(+:u_profile[:nl]))
+//     foreach_layer(){
+//       //u_profile[point.l] += u.x[] / (N*N) * dt / dt_mean;
+//       u_profile[point.l] += u.x[] / (N*N); // * dt / dt_mean;
+//
+//     }
+// }
+//
+// // This even writes to a file the layer average
+// event write_diag(t=0., t+=dt_mean){
+//     // main worker is writing the file
+//     if (pid()==0) {
+//       fp  = fopen("u_profile.dat","a");
+//       if (fp == NULL){
+//         fprintf(stderr, "Error opening file u_profile.dat");
+//         return 2;
+//       }
+//       for (int i=0; i<nl; ++i) {
+//         fprintf (fp, "%f %d %g\n", t, i, u_profile[i]);
+//       }
+//       fprintf(fp,"\n");
+//       fclose(fp);
+//     }
+//     // Reset the profile for all workers
+//     for (int i=0; i<nl; ++i) {
+//       u_profile[i] = 0.0;
+//     }
+//
+//
+// }
 
-    }
-}
-
-// This even writes to a file the layer average
-event write_diag(t=0., t+=dt_mean){
-    // main worker is writing the file
-    if (pid()==0) {
-      fp  = fopen("u_profile.dat","a");
-      if (fp == NULL){
-        fprintf(stderr, "Error opening file u_profile.dat");
-        return 2;
-      }
-      for (int i=0; i<nl; ++i) {
-        fprintf (fp, "%f %d %g\n", t, i, u_profile[i]);
-      }
-      fprintf(fp,"\n");
-      fclose(fp);
-    }
-    // Reset the profile for all workers
-    for (int i=0; i<nl; ++i) {
-      u_profile[i] = 0.0;
-    }
-
-
-}
   // vector gradU[];
   // vector gradV[];
   // dudx = u.x[]

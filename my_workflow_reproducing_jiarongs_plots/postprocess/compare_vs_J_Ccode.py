@@ -6,6 +6,7 @@ I compare the results from my C code (my workflow, but same parameters) and the 
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 # add libpy
 import os.path
@@ -14,6 +15,7 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, '../../libpy/')
 sys.path.append( filename )
 from fftlib import *
+from diags import interpz
 
 """
 ## Some parameters
@@ -61,7 +63,7 @@ d_data = {"Hugo_pprC":xr.open_mfdataset([pathH_C+file for file in ([filedata]+fi
 """
 ## Variance evolution with time
 """
-if True:
+if False:
     print('\nVariance check')
     clrs = ['b','g','orange']
     fig, ax = plt.subplots(1,1,figsize = (3,3),constrained_layout=True,dpi=dpi)
@@ -83,7 +85,7 @@ if True:
 """
 ## Spectrum evolution
 """
-if True:
+if False:
     print('\nSpectrum evolution')
     clrs = ['b','g','orange']
     for it,time_ in enumerate(at_t):
@@ -103,7 +105,7 @@ if True:
 """
 ## Average profiles
 """
-if True:
+if False:
     print('\nProfiles ')
     time_=120 # s
     clrs = ['b','g','orange']
@@ -149,9 +151,25 @@ if True:
     fig.savefig('comp_avg_profiles.svg')
 
 
-
-
-
+"""
+## Enstrophy differences between PPR lib and remapc.c
+"""
+if True:
+    print('\nEnstrophy maps ')
+    time_ = 120 # s
+    atz = -9. #m
+    znew = np.ones(1)*atz
+    fig, ax = plt.subplots(1,2,figsize = (7,3),constrained_layout=True,dpi=dpi)
+    for k,name in enumerate(["Hugo_pprC","Hugo_pprf90"]):
+        ds1=d_data[name].sel(time=time_)
+        e = interpz(ds1.z, ds1['enstrophy'], znew, fill_value=np.nan).compute()[:,:,0]
+        s=ax[k].pcolormesh(ds1.x,ds1.y,e,cmap='plasma', norm=colors.LogNorm(vmin=1e-5, vmax=1e-2))
+        ax[k].set_title(name)
+        ax[k].set_aspect(1.)
+        ax[k].set_xlabel('X (m)')
+        ax[k].set_ylabel('Y (m)')
+    plt.colorbar(s,ax=ax)
+    fig.savefig(f'enstrophy_maps_ppr_vs_remapc_z{atz}_t{time_}.png')
 plt.show()
 
 
