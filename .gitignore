@@ -42,3 +42,17 @@ my_workflow_reproducing_jiarongs_plots/namelist_lowres.toml
 my_workflow_reproducing_jiarongs_plots/namelist_midres.toml
 my_workflow_reproducing_jiarongs_plots/u_profile.dat
 my_workflow_reproducing_jiarongs_plots/using_pprf90/
+
+multilayer_stratified/.qccDrqIV5/
+multilayer_stratified/Makefile.deps
+multilayer_stratified/Makefile.tests
+multilayer_stratified/ml_convection.gpu.c
+multilayer_stratified/ml_convection.gpu.s
+multilayer_stratified/ml_convection.gpu/
+multilayer_stratified/ml_convection.plot
+multilayer_stratified/ml_convection.s
+multilayer_stratified/ml_convection.tst
+multilayer_stratified/ml_convection/
+multilayer_stratified/namelist.toml
+my_workflow_reproducing_jiarongs_plots/ml_breaking.s
+my_workflow_reproducing_jiarongs_plots/ml_breaking.tst

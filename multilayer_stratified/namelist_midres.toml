@@ -8,16 +8,11 @@
 #
 # INITIAL CONDITION
 #
-P = 0.02        # energy level
-coeff_kpL0 = 10 # kpL0 = coeff_kpL0 * pi
-N_mode = 32     # number of nodes
-N_power = 5     # directional spreading coeff
-# shape of the initial spectrum
-# -1: read file init_spectrum
-# 1: PM
-# 2: JONSWAP (not yet coded)
-F_shape = 1
-
+rho0 = 1025.0   # [kg.m-3] reference density
+strat = 0.00002 # s^2
+Ts = 20         # °C
+cp = 4.2e3      # [J.kg-1.K-1] heat capacity water
+betaT = 2e-4    # Linear equation of state: drho = betaT*(T0-T) (Vallis 2.4)
 #
 # DOMAIN DEFINITION
 #
@@ -29,10 +24,8 @@ h0 = 40.0    # =2pi/kp, depth of water (m)
 #
 # RUN PARAMETERS
 #
-tend = 150.0 # 200 (s) time to end the simu
-dtout = 20.0 # 20 (s) dt for output in netcdf
-restart = 0  # whether to restart from restart.nc
-
+tend = 200.0 # (s) time to end the simu
+dtout = 2.0  # (s) dt for output in netcdf
 
 #
 # SOLVER PARAMETERS
@@ -43,7 +36,11 @@ thetaH = 0.503 # theta_h for dumping fast barotropic modes
 
 
 #
+# FORCING
+#
+qt = -500.0 # W/m^2
+
+#
 # DIAGNOSTICS
 #
-# 1) profiles: XY avg, time avg during dt_mean windows
-dt_mean = 20.0 # length of window for time average
+dt_mean = 0.4 # s
