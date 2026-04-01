@@ -56,3 +56,6 @@ multilayer_stratified/ml_convection/
 multilayer_stratified/namelist.toml
 my_workflow_reproducing_jiarongs_plots/ml_breaking.s
 my_workflow_reproducing_jiarongs_plots/ml_breaking.tst
+multilayer_stratified/.qcc1HztnC/
+multilayer_stratified/first_run_1h32/
+multilayer_stratified/ml_convection.gpu_N7_3600s/
