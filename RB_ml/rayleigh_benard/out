@@ -1,0 +1,45 @@
+*** SUCCESS creating example file out.nc!
+
+# Multigrid, 40 steps, 0.262388 CPU, 0.267 real, 9.59e+03 points.step/s, 393 var
+   calls    total     self   % total   function
+     984     0.11     0.11     39.4%   relax_nh():/home/jacqhugo/basilisk/src/layered/nh.h:223
+      42     0.07     0.07     27.3%   vertical_remapping():/home/jacqhugo/basilisk/src/layered/remap.h:158
+      82     0.02     0.02      7.8%   residual_nh():/home/jacqhugo/basilisk/src/layered/nh.h:299
+      41     0.01     0.01      5.1%   pressure():/home/jacqhugo/basilisk/src/layered/hydro.h:456
+      41     0.01     0.01      4.8%   half_advection_0():/home/jacqhugo/basilisk/src/layered/implicit.h:150
+      41     0.14     0.01      2.3%   pressure_1():/home/jacqhugo/basilisk/src/layered/nh.h:452
+      41     0.01     0.01      2.1%   face_fields():/home/jacqhugo/basilisk/src/layered/hydro.h:287
+      11     0.01     0.01      1.9%   output():rayleigh_benard.c:136
+       1     0.00     0.00      1.8%   perf_plot():/home/jacqhugo/basilisk/src/layered/perfs.h:38
+      41     0.00     0.00      1.2%   viscous_term():/home/jacqhugo/basilisk/src/layered/diffusion.h:159
+      41     0.00     0.00      0.9%   viscous_term_1():rayleigh_benard.c:131
+      41     0.00     0.00      0.9%   viscous_term_0():/home/jacqhugo/basilisk/src/layered/nh.h:81
+      82     0.11     0.00      0.8%   mg_cycle():/home/jacqhugo/basilisk/src/poisson.h:92
+      41     0.00     0.00      0.8%   acceleration_1():/home/jacqhugo/basilisk/src/layered/dr.h:76
+      41     0.00     0.00      0.7%   acceleration_0():/home/jacqhugo/basilisk/src/layered/implicit.h:207
+      82     0.13     0.00      0.6%   mg_solve():/home/jacqhugo/basilisk/src/poisson.h:230
+       1     0.00     0.00      0.6%   init_0():rayleigh_benard.c:124
+      41     0.00     0.00      0.3%   pressure_0():/home/jacqhugo/basilisk/src/layered/implicit.h:252
+     984     0.00     0.00      0.2%   relax_hydro():/home/jacqhugo/basilisk/src/layered/implicit.h:104
+     410     0.00     0.00      0.1%   boundary_internal():/home/jacqhugo/basilisk/src/grid/cartesian-common.h:587
+       1     0.27     0.00      0.1%   run():/home/jacqhugo/basilisk/src/run.h:37
+      41     0.00     0.00      0.1%   update_eta():/home/jacqhugo/basilisk/src/layered/hydro.h:470
+       1     0.00     0.00      0.1%   defaults_2():/home/jacqhugo/basilisk/src/layered/nh.h:68
+      82     0.00     0.00      0.1%   residual_hydro():/home/jacqhugo/basilisk/src/layered/implicit.h:125
+      11     0.00     0.00      0.1%   perfs():/home/jacqhugo/basilisk/src/layered/perfs.h:26
+       1     0.00     0.00      0.0%   defaults_0():/home/jacqhugo/basilisk/src/layered/hydro.h:159
+       1     0.00     0.00      0.0%   defaults0():/home/jacqhugo/basilisk/src/layered/hydro.h:115
+       1     0.00     0.00      0.0%   defaults_4():/home/jacqhugo/basilisk/src/layered/dr.h:35
+      41     0.07     0.00      0.0%   remap_0():/home/jacqhugo/basilisk/src/layered/remap.h:166
+       1     0.00     0.00      0.0%   init():/home/jacqhugo/basilisk/src/layered/hydro.h:172
+       1     0.00     0.00      0.0%   cleanup_0():/home/jacqhugo/basilisk/src/layered/hydro.h:493
+       1     0.00     0.00      0.0%   cleanup_1():/home/jacqhugo/basilisk/src/layered/nh.h:461
+       1     0.00     0.00      0.0%   cleanup_4():/home/jacqhugo/basilisk/src/layered/dr.h:40
+      41     0.00     0.00      0.0%   set_dtmax():/home/jacqhugo/basilisk/src/layered/hydro.h:179
+      30     0.00     0.00      0.0%   perfs():/home/jacqhugo/basilisk/src/layered/perfs.h:13
+       1     0.00     0.00      0.0%   defaults_3():/home/jacqhugo/basilisk/src/layered/remap.h:39
+       1     0.00     0.00      0.0%   defaults_1():/home/jacqhugo/basilisk/src/layered/implicit.h:64
+       1     0.00     0.00      0.0%   defaults0_0():/home/jacqhugo/basilisk/src/layered/implicit.h:39
+       1     0.00     0.00      0.0%   defaults():/home/jacqhugo/basilisk/src/run.h:44
+       1     0.00     0.00      0.0%   cleanup_3():/home/jacqhugo/basilisk/wiki/sandbox/bderembl/libs/netcdf_bas.h:468
+       1     0.00     0.00      0.0%   cleanup():/home/jacqhugo/basilisk/src/run.h:52

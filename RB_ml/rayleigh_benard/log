@@ -1,0 +1,14 @@
+scan param rho0: 1.025000e+03
+scan param cp: 4.200000e+03
+scan param betaT: 2.000000e-04
+scan param N_grid: 6
+scan param L: 2.000000e+02
+scan param N_layer: 30
+scan param h0: 4.000000e+01
+scan param tend: 2.000000e+01
+scan param dtout: 2.000000e+00
+scan param nu0: 2.500000e-05
+scan param thetaH: 5.030000e-01
+scan param qt: -5.000000e+02
+Read in parameters!
+Done initialization!
