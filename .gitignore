@@ -72,6 +72,32 @@ RB_ml/namelist.toml
 
 reproducing_jiarongs_plots/postprocess/data_Jiarong.bak/
 
+breaking_strat/gen_ini/
+breaking_strat/ml_breaking_strat.gpu.c
+breaking_strat/ml_breaking_strat.gpu/
+breaking_strat/ml_breaking_strat.hpc/
+breaking_strat/ml_breaking_strat/
+breaking_strat/namelist.toml
+bug_dimension_of_array/main.c.~0~
+bug_dimension_of_array/main.dims
+bug_dimension_of_array/main.log~
+bug_dimension_of_array/main/
+bug_write_netcdf/.qcc5hgyqO/
+bug_write_netcdf/.qcc8pVcBi/
+bug_write_netcdf/.qccZlpFll/
+bug_write_netcdf/main.ref
+bug_write_netcdf/main/
+bug_write_netcdf/mainGPU.c
+bug_write_netcdf/mainGPU.ref
+bug_write_netcdf/mainGPU/
+loggst
+multilayer_stratified/.qccp9ieHa/
+multilayer_stratified/.qccqRgI2E/
+multilayer_stratified/.qccrz0mgv/
+multilayer_stratified/ml_convection.dims
+multilayer_stratified/ml_convection.log~
+simu_Olivier_convection/Numerical-simulation-parameters.pdf
+
 
 
 

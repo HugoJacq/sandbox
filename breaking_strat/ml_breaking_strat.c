@@ -1,7 +1,7 @@
 /**
   Field scale wave breaking (multilayer solver)
 
-No stratification
+with stratification
 
 
 USAGE
@@ -10,10 +10,10 @@ USAGE
   make
 
   * Compilation and run (gpu)
-  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia make ml_convection.gpu.tst
+  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia make name.gpu.tst
 
   * HPC source file generation
-  make _ml_convection.c
+  make _name.c
 
   * Running on HPC
 
@@ -21,38 +21,20 @@ USAGE
   mpicc -std=c99 -O2 _*.c
 
   -> then run (in a slurm file)
-  srun ./ml_convection
+  srun ./name
 
 */
-
+const double g_ = 9.81 [1,-2];        // [m.s-2] Gravity
 
 #include "grid/multigrid.h"
 //#include "grid/multigrid1D.h"
 #include "layered/hydro.h"
 #include "layered/nh.h"
 #include "layered/remap.h"
-//#include "layered/diffusion.h"
 #include "layered/perfs.h"
 #include "bderembl/libs/extra.h"      // parameters from namlist
 #include "bderembl/libs/netcdf_bas.h" // read/write netcdf files
-
-//#define g_ 9.81
-
-/*
-
-TO DO : 
-- add dimensions so that they can be saved in the netcdf
-
-
-- aspect ratio: H/L with H height of OBL/horizontal size of plume
-- Convective Richardson: N**2.H**2/(w*)**2
-- convective scale w*=(-B0.h)**(1/3)
-- surface buoyancy flux B0=g*betaT*Q/(rho.cp)
-
-- convective time t* = H/w*
-- analytical law: h(t) = sqrt(2.8/N**2 . -B0.t) (Van Roeckel)
-
-*/
+#include "hugoj/lib/spectrum.h"       // Initial conditions generation
 
 /*
 DEFAULT PARAMETERS
@@ -66,15 +48,20 @@ char file_out[20] = "out.nc";          // file name of output
 // -> Initial conditions
 double strat = 0.000002 [0,-2];       // [s-2] N^2 stratification
 double Ts = 20. [0,0,1];              // [K] Surface temperature (arbitrary)
+double P = 0.2 [1, -1];               // energy level (estimated so that kpHs is reasonable)
+int coeff_kpL0 = 10 [];               // kpL0 = coeff_kpL0 * pi
+int N_mode = 32 [];                   // Number of modes in wavenumber space
+int N_power = 5 [];                   // directional spreading coeff
+int F_shape = 0 [];                   // shape of the initial spectrum
+double kp = PI*10/200.0 [-1];         // peak wave number
 // -> Forcing
 double qt = 100. [-2,-1,0,1];         // [W.m-2] Heat flux
 // -> Domain definition
-int N_grid = 5;                   // 2^N_grid : number of x and y gridpoints
+int N_grid = 5;                       // 2^N_grid : number of x and y gridpoints
 double L = 200.0 [1];                 // domain size
-int N_layer = 5;                  // number of layers
+int N_layer = 5;                      // number of layers
 double h0 = 1.0 [1];                  // depth of water
 // -> Runtime parameters
-int restart = 0 [0];                  // 1: restart, 0: no restart
 double tend = 2.0 [0,1];              // end time of simulation
 // -> saving outputs
 double dtout = 2.0 [0,1];             // dt for output in netcdf
@@ -92,20 +79,14 @@ double betaT = 2e-4 [0,0,-1];         // [K-1] Thermal expansion coeff for water
 double Dtemp = 1.5e-5 [2,-1];         // [m2.s-1] Scalar vertical diffusion coeff
 double T0 = 20. [0,0,1];              // [°C] Reference temperature
 double Trand = 0.1 [0,0,1];           // [°C] Random temperature perturbution
-const double g_ = 9.81 [1,-2];        // [m.s-2] Gravity
+
 #define drho(T) (betaT*(T0-T))        // Linear equation of state: drho = betaT*(T0-T) (Vallis 2.4)
 #define Tini(z) strat/(g_*betaT)*z + Ts
-
-// double drho0 = 1e-3, T0 = 13.25, T1 = 8., H0 = 100.;
-// #define drho(T) (drho0*(T0 - T)/(T0 - T1))
-// #define T0(z) (T1 + (T0 - T1)*(z + H0)/H0)
-//#define T0(z) (T1 + (T0 - T1)*(z + H0)/H0)
 #include "layered/dr.h"
 
 // diag
 double *T_profile;
-double *W_profile;
-double *Tflx_profile;
+double *u_profile;
 double dt_mean = 1.;
 
 static FILE * fp1;
@@ -125,7 +106,6 @@ int main(int argc, char *argv[])
   add_param("tend", &tend, "double");
   add_param("nu0", &nu0, "double");
   add_param("thetaH", &thetaH, "double");
-  add_param("restart", &restart, "int");
   add_param("dtout", &dtout, "double");
   add_param("strat", &strat, "double");
   add_param("Ts", &Ts, "double");
@@ -134,18 +114,16 @@ int main(int argc, char *argv[])
   add_param("betaT", &betaT, "double");
   add_param("qt", &qt, "double");
   add_param("dt_mean", &dt_mean, "double");
-  
-  // show_dimension (u);
-  //dimensional (T_profile[0], T0);
-  //dimensional (W_profile[0], L/dt);
 
+  kp = PI * coeff_kpL0 / L; // kpL=coeff x pi peak wavelength
+  
   // Search for the configuration file with a given path or read params.in
   if (argc == 2)
     strcpy(file_param, argv[1]);
   else
     strcpy(file_param, namlist);
   read_params(file_param);
-  
+
   // Settings solver values from namlist values
   L0 = L;
   nu = nu0;
@@ -154,27 +132,18 @@ int main(int argc, char *argv[])
   G = g_;
   theta_H = thetaH;
   CFL_H = 1; 
-  //TOLERANCE = 1e-8;
-  //CFL_H = 40; 
-  //CFL=0.5;
-
+  
   // Boundary condition
   origin (-L0/2., -L0/2.);
-  
-  //periodic (right);
-  #if dimension==2
-    periodic (top);
-  #endif
+  periodic (top);
   periodic (left);
 
-  // T profile
-  // TODO: how to make T_profile inherite the dimension of T ?
+  // diags
   T_profile = (double*)calloc(nl, sizeof(double));
-  W_profile = (double*)calloc(nl, sizeof(double));
-  Tflx_profile = (double*)calloc(nl, sizeof(double));
+  u_profile = (double*)calloc(nl, sizeof(double));
   fp1  = fopen("T_profile.dat","w"); // reset file
   fclose(fp1);
-  fp2  = fopen("Tflx_profile.dat","w"); // reset file
+  fp2  = fopen("u_profile.dat","w"); // reset file
   fclose(fp2);
 
   fprintf (stderr, "Read in parameters!\n");
@@ -185,83 +154,69 @@ int main(int argc, char *argv[])
 }
 
 event init(i =  0) {
-  // reset({T},0.);
-  geometric_beta (0., true); // if !=0, varying layer thickness
+
+  geometric_beta (1/3., true); // if !=0, varying layer thickness
+  
+  //We generate a spectrum using spectrum.h
+  T_Spectrum spectrum;
+  spectrum = read_spectrum(N_mode);
+
   // step 1: set eta and h
   foreach() {
     zb[] = -h0;
-    eta[] = 0.;
-    double H = - zb[];
-    
+    eta[] = wave(x, y, N_grid, spectrum);
+    double H = wave(x, y, N_grid, spectrum) - zb[];
     foreach_layer() {
-      h[] = H*beta[point.l]/nl;
+      h[] = H*beta[point.l];
     } 
   }
 
-  reset({T},0.);
   // step 2: set currents
   foreach() {
     double z = zb[];
-    dimensional (T[]==Trand);
     foreach_layer() {
       z += h[]/2.;
-      foreach_dimension(){
-        u.x[] = 0.;
-      }
-      w[] = 0.;
-      // T[] = Tini(z) - Trand + (rand() / (RAND_MAX+1.0) * 2 * Trand) ;
-      //T[] = Tini(z) + Trand * (rand() / (RAND_MAX+1.0) * 2.0 - 1.0) ;
-      //T[] = Tini(z) + Trand * noise() ;
-      T[] = Trand * noise() ;
-      //T[] = T0(z);
+      u.x[] = u_x(x, y, z, N_grid, spectrum);
+      u.y[] = u_y(x, y, z, N_grid, spectrum);
+      w[] = u_z(x, y, z, N_grid, spectrum);
+      T[] = Tini(z);
+      fprintf(stderr, "l=%d, z=%f, Tini(z)=%f", point.l, z, Tini(z));
       z += h[]/2.;
     }
   }
-  
+
   // initializing diag arrays
   //T_profile[0] = Trand; // <- this passes the dimensional analysis
   //dimensional (T_profile[0] == Trand); // <- this doesnt
-  // for (int i=0; i<nl; ++i) {
-  //   T_profile[i] = Trand*0.;
-  //   Tflx_profile[i] = Trand*L0/DT*0.;
-  //   W_profile[i] = L0/DT*0.;
-  // }
-  
-  show_dimension (T);
-  
-  // original version, bug for now (currents writes = 0)
-  create_nc({zb, h, u.x, u.y, w, eta, T}, file_out);
+  for (int i=0; i<nl; ++i) {
+    T_profile[i] = Trand*0.;
+    u_profile[i] = L0/DT*0.;
+  }
+  // show_dimension (T_profile[0]);
+  // show_dimension (W_profile[0]);
 
-  // temporary fix
-  // #if dimension==1
-  //   create_nc((scalar *){zb, h, u.x, w, eta, T}, file_out);
-  // #else
-  //   create_nc((scalar *){zb, h, u.x, u.y, w, eta, T}, file_out);
-  // #endif
-  // fprintf (stderr,"Done initialization!\n");
+
+  // temporary fix, should use u instead of u.x, u.y
+  create_nc({zb, h, u.x, u.y, w, eta, T}, file_out);
+  fprintf (stderr,"Done initialization!\n");
 }
 
-// vertical diffusion on T
-// This implements a heat flux at the surface
-// event viscous_term (i++)
-// {
-//   foreach()
-//     vertical_diffusion (point, h, T, dt, D, qt/(D*rho0*cp), 0., 0.);
-//     //TODO: change s_b for the value at bottom of stratification, instead of
-//     //      this 0.°C that is cooling down the fluid.
-// }
 
-// Writing a 4D netcdf file
-// event output(t = 0.; t<= tend+smalltime; t+=dtout){
-//   write_nc();
-// }
+// dump outputs
+event output(t = 0.; t<= tend+smalltime; t+=dtout){
+  write_nc();
+  // regular dump
+  char dname[100];
+  sprintf (dname, "dump_t%g", t);
+  dump(dname);
+}
 
 
 
 double* h_avg(scalar var, double* profile){
   /*
   This function computes the horizontal average of var.
-  
+
   INPUTS:
     var: scalar (C Basilisk), the variable to average.
     profile: array of double of length nl
@@ -303,49 +258,31 @@ int write_profile(char* name, double* profile, FILE* fp){
 
 // This event compute layer average of T, w
 event compute_horizontal_avg (t+=dt_mean; t<=tend+smalltime){
-  // foreach(reduction(+:T_profile[:nl]))
-  //   foreach_layer(){
-  //   #if dimension==1
-  //     T_profile[point.l] += T[] / N;// (N*N); // * dt / dt_mean;
-  //   #else
-  //     T_profile[point.l] = T_profile[point.l] + T[] ; // / (N*N);
-  //   #endif
-  //   }
+
   T_profile = h_avg(T, T_profile);
-  show_dimension (T_profile[0]);
-  show_dimension (W_profile[0]);
-  //W_profile = h_avg(w, W_profile);
+  u_profile = h_avg(u.x, u_profile);
 }
 
-// event compute_flx_wT(t+=dt_mean, t<=tend+1e-10){
-//   foreach(reduction(+:Tflx_profile[:nl]))
-//     foreach_layer(){
-//     #if dimension==1
-//       Tflx_profile[point.l] += ((w[]-W_profile[point.l])*(T[]-T_profile[point.l])) / N;
-//     #else
-//       Tflx_profile[point.l] += ((w[]-W_profile[point.l])*(T[]-T_profile[point.l])) / (N*N);
-//     #endif
-//   }
-// }
 
 
 // This even writes to a file the layer average
-// event write_diag(t=0., t+=dt_mean){
-//     write_profile("T_profile.dat", T_profile, fp1);
-//     write_profile("Tflx_profile.dat", Tflx_profile, fp2);
-//
-//     // Reset the profile for all workers
-//     for (int i=0; i<nl; ++i) {
-//       T_profile[i] = 0.0;
-//       Tflx_profile[i] = 0.0;
-//     }
-// }
+event write_diag(t=0.; t+=dt_mean){
+
+    write_profile("T_profile.dat", T_profile, fp1);
+    write_profile("u_profile.dat", u_profile, fp2);
+
+    // Reset the profile for all workers
+    for (int i=0; i<nl; ++i) {
+      T_profile[i] = 0.0;
+      u_profile[i] = 0.0;
+    }
+}
 
 
-// event cleanup(t=end){
-//   free(T_profile);
-//   free(Tflx_profile);
-// }
+event cleanup(t=end){
+  free(T_profile);
+  free(u_profile);
+}
 
 /**
 Results: plots
