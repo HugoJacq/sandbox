@@ -1,0 +1,52 @@
+# ============================================================
+# Configuration file for the multi_layer model using Basilisk
+#
+#
+#
+#
+# ============================================================
+#
+# INITIAL CONDITION
+#
+# > THERMIC
+rho0 = 1025.0    # [kg.m-3] reference density
+strat = 0.000002 # s^2
+Ts = 20.0        # °C
+cp = 4.2e3       # [J.kg-1.K-1] heat capacity water
+betaT = 2e-4     # Linear equation of state: drho = betaT*(T0-T) (Vallis 2.4)
+# > DYNAMIC
+P = 0.02          # m/s peak energy of PM spectrum
+coeff_kpL0 = 10.0 # 
+N_mode = 32
+N_power = 5
+#
+# DOMAIN DEFINITION
+#
+N_grid = 7   # 1024=10 2^N_grid, number of x and y gridpoints
+L = 200.0    # (m) domain size
+N_layer = 30 # number of layers
+h0 = 40.0    # =2pi/kp, depth of water (m)
+
+#
+# RUN PARAMETERS
+#
+tend = 600.0 # (s) time to end the simu
+dtout = 20.0 # (s) dt for output in netcdf
+
+#
+# SOLVER PARAMETERS
+#
+nu0 = 0.000025 # m2 s-2 Viscosity for vertical diffusion
+RANDOM = 2     # random integer (>1) for random number generator
+thetaH = 0.503 # theta_h for dumping fast barotropic modes
+
+
+#
+# FORCING
+#
+qt = 0.0 # W/m^2
+
+#
+# DIAGNOSTICS
+#
+dt_mean = 1.0 # s
