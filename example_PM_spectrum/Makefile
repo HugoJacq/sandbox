@@ -1,7 +1,7 @@
 CFLAGS += -I$(DOCUMENT_ROOT)/sandbox #-O2
 CFLAGS += -disable-dimensions # skip dimensions check for now
 
-EXEC=ml_breaking
+EXEC=ml_breaking.gpu.tst
 
 # > local mpi run
 ${EXEC}.tst: CC = mpicc -D_MPI=16

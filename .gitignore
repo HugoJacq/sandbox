@@ -76,6 +76,7 @@ RB_ml/namelist.toml
 **/*.html
 **/*.tags
 **/*.pdf
+**/*.ref
 
 reproducing_jiarongs_plots/postprocess/data_Jiarong.bak/
 
@@ -118,3 +119,21 @@ view_ini_condition/stokes/
 view_ini_condition/synth_eta.c
 view_ini_condition/synth_eta/
 
+example_PM_spectrum/.qcc4f8s3M/
+example_PM_spectrum/.qccZgKjCi/
+example_PM_spectrum/ml_breaking/
+specgen_py_vs_C/F_k_C
+specgen_py_vs_C/F_k_py
+specgen_py_vs_C/F_kxky_C
+specgen_py_vs_C/F_kxky_py
+specgen_py_vs_C/eta_C
+specgen_py_vs_C/eta_py
+specgen_py_vs_C/kmod_C
+specgen_py_vs_C/kmod_py
+specgen_py_vs_C/kx_C
+specgen_py_vs_C/kx_py
+specgen_py_vs_C/ky_C
+specgen_py_vs_C/ky_py
+specgen_py_vs_C/main
+test_spectrum.h/direction/
+test_spectrum.h/parceval/
