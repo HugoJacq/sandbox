@@ -12,6 +12,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import xarray as xr
 import scipy.integrate as integrate
+import matplotlib as mpl
 
 # add libpy
 import os.path
@@ -22,7 +23,7 @@ sys.path.append( filename )
 from fftlib import get_spec_1D
 from data_reader import read_bas_data
 from tools_plots import plot_surface_3D
-
+from solution_analytique import *
 
 dopart = 1 # use 0 to do all
 
@@ -33,7 +34,7 @@ paths = {"mono":"./monochromatic/monoc.nc",
 """
 ## I. Mean current for different waves
 """
-if dopart==1 or dopart=0:
+if dopart==1 or dopart==0:
     # linear (sin) wave
     H0 = 100        # m, depth of water
     dz = 0.5        # m
@@ -48,17 +49,6 @@ if dopart==1 or dopart=0:
     """
     We integrate numericaly the layer average from the linear solution
     """
-    # We define some functions
-    def f_eta(x, k, a):
-        return a*np.sin(k*x)
-
-    def f_u(x, z, k, a):
-        om = np.sqrt(g*k)
-        return a*om*np.exp(k*z)*np.sin(k*x)
-    
-    def f_ul(x, d, k, a):    
-        return f_u(x, f_eta(x, k, a)-d, k, a)
-
     # Integration over 1 wavelength for a few layers
     # (see "Layer definitions")
     myX = np.arange(-L/2,L/2,L/1000)
@@ -80,6 +70,35 @@ if dopart==1 or dopart=0:
             print(result, err)
             raise Exception('Error in integration of function')
         a_profile[l] = result
+    
+    """
+    Analytical solution
+    """
+    
+    dzl = 0.05
+    zl = np.arange(dzl,1.,dzl)
+    a2_profile = np.zeros(zl.shape)
+    for kz in range(len(zl)):
+        a2_profile[kz] = analytical_u_profile_mode_m(n=10, 
+                                                 sigma=zl[kz], 
+                                                 t=0., 
+                                                 omega=omega, 
+                                                 m=1, 
+                                                 H0=H0, 
+                                                 L=L, 
+                                                 a=a)
+
+    """ 
+    Verification that the serie converges to the numerical integration when
+    we increase the number of terms for the mode m=1
+    """
+    # verification of recursion
+    verif_first_terms_recursion()
+
+    # nmax = 5
+    # verif_analytical_solution(nmax)
+    # plt.show()
+    raise Exception
 
     """
     We compare with the initial field from the Basilisk simulation
@@ -102,8 +121,6 @@ if dopart==1 or dopart=0:
     ds_PM = ds_PM.isel(time=0) # select the initial time
     bas_profile_u_PM = ds_PM['u.x'].mean(['x','y']).values
     bas_z_PM = ds_PM['z'].mean(['x','y']).values
-
-
 
     """
     Plot the results for layer average
@@ -197,23 +214,23 @@ if dopart==1 or dopart=0:
 
 
 """
-if dopart==2 or dopart=0:
-    path = "./gen_ini/"
+if dopart==2 or dopart==0:
+    path = "./synth_eta/"
 
     # a list of direction to test 
     list_theta = [0, np.pi, -np.pi, 2*np.pi]
     depth_max=-40. #m
     dds = []
     for k in range(len(list_theta)):
-        dds.append(read_bas_data(path+"out_%d.nc" %k))
+        dds.append(read_bas_data(path+"synth_eta_%d.nc" %k))
 
     clrs = ['b','g','orange','c']
 
     """
     ## Profiles with layer average
     """
-    vmax = 0.05 # m/s
-    fig, ax = plt.subplots(1,4,figsize = (10,5),constrained_layout=True,dpi=100)
+    vmax = 0.07 # m/s
+    fig, ax = plt.subplots(1,3,figsize = (10,5),constrained_layout=True,dpi=100)
     for k in range(len(list_theta)):
         ds,grid = dds[k]
         
@@ -250,13 +267,14 @@ if dopart==2 or dopart=0:
     """
     ## Sea surface state
     """
-
     for k in range(len(list_theta)):
+        ds,grid = dds[k]
+
         fig, ax = plt.subplots(1,1,figsize = (6,5),constrained_layout=True,dpi=100)
         s = ax.pcolormesh(ds.x,ds.y,ds.eta.isel(time=0),cmap='Greys_r',vmin=-1,vmax=1)
         ax.set_xlabel('X (m)')
         ax.set_ylabel('Y (m)')
-        ax.set_title(fr'$\eta$ for $\theta_m$={k}$\pi$')
+        ax.set_title(fr'$\eta$ for $\theta_m$={k}$\pi$/4')
         plt.colorbar(s,ax=ax)
         fig.savefig(rf'eta_{k}pi.pdf')
 

@@ -2,9 +2,7 @@
 
 # Test of spectrum.h: parceval equality
 
-Reminder:
-
-Parceval equalities:
+Reminder: Parceval equalities
 
 $$
 \begin{aligned}
@@ -116,6 +114,13 @@ int main(){
   FILE *fptr5 = fopen("eta_C", "wb");
   fwrite(eta, sizeof(double), N_cells*N_cells, fptr5);
   fclose(fptr5);
+  
+  // free memory
+  free(eta);
+  free(F_kmod);
+  free(kmod);
+  free_spectrum(spectrum);
+
 
   /** Executing the python code to work on the binary files */
   // TODO:

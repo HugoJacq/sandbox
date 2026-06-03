@@ -1,29 +1,60 @@
-/*
- Code translation from python to C.
- Original code : Jiarong Wu,
- https://github.com/jiarong-wu/multilayer_breaking/blob/main/specgen/specgen.py
+/**
+ 
+This script is used to generate a synthetic sea state from a 1D spectrum
+following [Wu et al., 2023](#Wu2023) and their python implementation 
+ ([here](https://github.com/jiarong-wu/multilayer_breaking/blob/main/specgen/specgen.py)).
+We give a direction to a azimuthal integrated spectrum
 
-g_ has to be defined before #include spectrum.h !
+$$
+\begin{aligned}
+  E(k,\theta) = \frac{\phi(k)}{k} \psi(\theta)
+\end{aligned}
+$$
+
+we choose $\psi$ to be
+
+$$
+\begin{aligned}
+  \psi(\theta) = cos^N(\theta-\theta_m)/\int_{-\pi/2}^{\pi/2} cos^N(\theta-\theta_m)d\theta
+\end{aligned}
+$$
+
+with $\theta_m$ the main direction (positive anti-clockwise, zero when aligned with $x$). 
+As of now, $\phi$ is a Pierson-Moscowitz spectrum
+
+$$
+\begin{aligned}
+  \phi(k) = P g^{-1/2}k^{-2.5} exp(-1.25 (k_p/k)^2)
+\end{aligned}
+$$
+
+From $E(k,\theta)$ we use the Airy theory to build the surface elevation $\eta$
+and currents ($u$,$v$,$w$).
+
+Note: g_ has to be defined before #include spectrum.h !
 
 */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "hugoj/lib/interpolate.h"
-//#include <gsl/gsl_rng.h>
-
-#define PI 3.14159265358979323846
 
 typedef struct {
   int N_mode;
-  //double *kmod;
   double *kx;
   double *ky;
-  //double *F_kmod;
   double *F_kxky;
   double *phase;
   double *omega;
 } T_Spectrum;
+
+void free_spectrum(T_Spectrum s) {
+    free(s.kx);
+    free(s.ky);
+    free(s.F_kxky);
+    free(s.phase);
+    free(s.omega);
+}
 
 void cart2pol(double x, double y, double *rho, double *phi) {
   *rho = sqrt(x * x + y * y);
@@ -43,7 +74,9 @@ double randInRange(double min, double max)
 
 
 
-// Some common spectra
+
+/** ## Some common spectra */
+
 double spectrum_PM(double P, double kp, double kmod) {
   // Note: P here is in fact P/sqrt(g) in the PM spectrum equation
   return P * pow(kmod, -2.5) * exp(-1.25 * pow(kp / kmod, 2.0));
@@ -54,6 +87,9 @@ double spectrum_JONSWAP(double alpha, double kp, double kmod) {
 double spectrum_Gaussian(double G, double span, double kp, double kmod) {
   return (G / span) * exp(-0.5 * pow((kmod - kp) / span, 2.0));
 }
+
+
+/** ## Generate a spectrum */
 
 T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
                                double kp, double thetam=0.) 
@@ -96,11 +132,12 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
   // building kmod
   for (int i = 0; i < N_kmod; ++i) {
     kmod[i] =
-        2 * PI / L + 1.0 * i / (N_kmod - 1) * (1.41 * 100 * 2 - 2) * PI / L;
+        2 * pi / L + 1.0 * i / (N_kmod - 1) * (1.41 * 100 * 2 - 2) * pi / L;
+    // fixme: what are these weird constants?? 1.41 * 100 * 2 - 2
   }
   // build Dtheta
   for (int i = 0; i < N_theta; ++i) {
-    theta[i] = -PI + 2.0*PI*i / (N_theta - 1);
+    theta[i] = -pi + 2.0*pi*i / (N_theta - 1);
     Dtheta[i] = fabs(pow(cos(theta[i] - thetam), N_power));  
   }
   // Normalizing Dtheta
@@ -127,16 +164,16 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
 
   // Uniform grid in kx ky
   for (int i = 0; i < Ntmode; ++i) {
-    spectrum.kx[i] = -2*PI*N_mode/L + 2*PI/L*i;
+    spectrum.kx[i] = -2*pi*N_mode/L + 2*pi/L*i;
   }
   for (int i = 0; i < Ntmode; ++i) {
-    //spectrum.ky[i] = 2 * PI / L * (i - N_mode / 2);
-    spectrum.ky[i] = -2*PI*N_mode/L + 2*PI/L*i;
+    //spectrum.ky[i] = 2 * pi / L * (i - N_mode / 2);
+    spectrum.ky[i] = -2*pi*N_mode/L + 2*pi/L*i;
   }
 
   // interp F_kmodtheta on kx,ky grid
   double rho, phi;
-  double localkx,localky;
+  double localkx;
   for (int ix = 0; ix < Ntmode; ++ix) {
     for (int iy = 0; iy < Ntmode; ++iy) {
       // first we get polar coords
@@ -156,7 +193,6 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
 
       // we remove the negative kx values
       localkx = spectrum.kx[ix]*cos(thetam) + spectrum.ky[iy]*sin(thetam);
-      localky = - spectrum.kx[ix]*sin(thetam) + spectrum.ky[iy]*cos(thetam);
       if (localkx < 0.){
         spectrum.F_kxky[ix*Ntmode + iy] = 0.; // and x2 the half plane
       }
@@ -184,11 +220,15 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
       index = i*Ntmode + j;
       k = sqrt(sq(spectrum.kx[i]) + sq(spectrum.ky[j]));
       spectrum.omega[index] = sqrt(g_*k); // we use linear dispersion relation 
-      spectrum.phase[index] = randInRange (0, 2.*PI); // random phase in [0,2pi]
+      spectrum.phase[index] = randInRange (0, 2.*pi); // random phase in [0,2pi]
     }
   }
   return spectrum;
 }
+
+/** 
+## Reading a spectrum from file
+*/
 
 T_Spectrum read_spectrum(int N_mode) {
   /* This function reads a file and extract the spectrum from it.
@@ -279,182 +319,112 @@ T_Spectrum read_spectrum(int N_mode) {
 
 
 
+/**
 
-// Surface elevation following the linear wave theory
-// (strictly speaking we look for a solution that is the sum of linear modes, no
-// need for the  hypothesis of linear theory)
-double wave(double x, double y, int N_grid, T_Spectrum spec, double dir=0.) {
-  double eta = 0.0;
-  double ampl = 0.0;
-  double a = 0.0;
-  int index = 0;
+## Surface elevation
+
+$$
+\begin{aligned}
+  \eta(x,y) = \sum_{ij} a_{ij} cos(k_{x,i}x+k_{y,j}y + \phi_{rand})
+\end{aligned}
+$$
+
+with $a_{ij} = \sqrt{2F(k_{x,i},k_{y,j})dk_x dk_y}$
+
+Strictly speaking we look for a solution that is the sum of linear modes, no
+need for the  hypothesis of linear theory)
+*/
+
+double wave (double x, double y, T_Spectrum spec)
+{
+  double eta = 0.;
   double dkx = spec.kx[1] - spec.kx[0];
   double dky = spec.ky[1] - spec.ky[0];
   int N_mode = spec.N_mode;
   int Ntmode = N_mode*2 + 1;
-  //double kx2, ky2;
-  for (int i = 0; i < Ntmode; i++) {
+
+  for (int i = 0; i < Ntmode; i++)
     for (int j = 0; j < Ntmode; j++) {
-      index = i*Ntmode + j;
-      if (spec.F_kxky[index] * dkx * dky < 0.){
-        fprintf(stderr,"i=%d j=%d %f \n", i,j, spec.F_kxky[index] * dkx * dky);
-      }
-      ampl = sqrt(2. * spec.F_kxky[index] * dkx * dky);
-
-      //adding a direction: change of coordinates
-      // kx2 = spec.kx[i]*cos(dir) - spec.ky[j]*sin(dir);
-      // ky2 = spec.kx[i]*sin(dir) + spec.ky[j]*cos(dir);
-      // a = ( kx2*x + ky2*y + spec.phase[index]);
-
-
-
-      // a = ( (spec.kx[i]*cos(dir)-spec.ky[j]*sin(dir))*x + 
-      //     (spec.kx[i]*sin(dir)+spec.ky[j]*cos(dir))*y +
-      //      spec.phase[index]);
-
-      a = (spec.kx[i]*x + spec.ky[j]*y + spec.phase[index]);
-
+      int index = i*Ntmode + j;
+      double ampl = sqrt(2. * spec.F_kxky[index]*dkx*dky);
+      double a = spec.kx[i]*x + spec.ky[j]*y + spec.phase[index];
       eta += ampl*cos(a);
     }
-  }
-  //printf("wave(): ampl %f, a %f, eta %f\n", ampl, a, eta);
+
   return eta;
 }
 
+/** 
+ 
+## U current
+
+$$
+\begin{aligned}
+  u(x,y,z) = \sum_{ij} a_{ij} \sqrt{gk} e^{kz} cos(\beta_{ij}) cos(k_{x,i}x+k_{y,j}y + \phi_{rand})
+\end{aligned}
+$$
+
+with $\beta_{ij} = arctan2(k_{y,i}/k_{x,i})$ defined in $[-\pi,\pi)$, $g$ the gravity,
+$k=\sqrt{k_{x,i}^2+k_{y,j}^2}$ and $\phi_{rand}$ and random phase in $[-\pi,\pi)$.
+
+*/
+
 // Velocities following the linear wave theory
-double u_x(double x, double y, double z, int N_grid, T_Spectrum spec, double dir=0.) 
+coord wave_u (double x, double y, double z, T_Spectrum spec) 
 {
-  int index = 0;
-  double u_x = 0.0;
-  double ampl = 0.0;
-  double a = 0.0;
-  double z_actual = 0.0;
-  double kmod = 0.0;
-  double theta = 0.0;
-  double dkx = spec.kx[1] - spec.kx[0];
-  double dky = spec.ky[1] - spec.ky[0];
-  int N_mode = spec.N_mode;
-  //double kx2, ky2;
-  int Ntmode = N_mode*2 + 1;
-  for (int i = 0; i < Ntmode; i++) {
-    for (int j = 0; j < Ntmode; j++) {
-      index = i*Ntmode + j;
-      ampl = sqrt(2. * spec.F_kxky[index] * dkx * dky);
-      z_actual = (z < ampl ? (z) : ampl);
-
-      //adding a direction: change of coordinates
-      //kx2 = spec.kx[i]*cos(dir) - spec.ky[j]*sin(dir);
-      //ky2 = spec.kx[i]*sin(dir) + spec.ky[j]*cos(dir);
-
-      //kmod = sqrt(sq(kx2) + sq(ky2));
-      //theta = atan(ky2 / kx2);
-      // a = (spec.kx[i] * x + spec.ky[j] * y + spec.phase[index]);
-      //a = ( kx2*x + ky2*y + spec.phase[index]);
-
-      kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
-      //theta = atan(spec.ky[j] / spec.kx[i]);
-      theta = atan2(spec.ky[j], spec.kx[i]);
-      a = ( spec.kx[i]*x + spec.ky[j]*y + spec.phase[index]);
-
-      u_x +=
-          sqrt(g_ * kmod) * ampl * exp(kmod * z_actual) * cos(a) * cos(theta);
-    }
-  }
-  return u_x;
-}
-double u_y(double x, double y, double z, int N_grid, T_Spectrum spec, double dir=0.) 
-{
-  int index = 0;
-  double u_y = 0.0;
-  double ampl = 0.0;
-  double a = 0.0;
-  double z_actual = 0.0;
-  double kmod = 0.0;
-  double theta = 0.0;
+  coord u = {0.,0.,0.};
   double dkx = spec.kx[1] - spec.kx[0];
   double dky = spec.ky[1] - spec.ky[0];
   int N_mode = spec.N_mode;
   int Ntmode = 2*N_mode + 1;
-  //double kx2, ky2;
-  for (int i = 0; i < Ntmode; i++) {
+
+  for (int i = 0; i < Ntmode; i++)
     for (int j = 0; j < Ntmode; j++) {
-      index = i*Ntmode + j;
-      ampl = sqrt(2. * spec.F_kxky[index] * dkx * dky);
-      z_actual = (z < ampl ? (z) : ampl);
-      // kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
-      // theta = atan(spec.ky[j] / spec.kx[i]);
-      // //a = (spec.kx[i] * x + spec.ky[j] * y + spec.phase[index]);
-      // a = ( (spec.kx[i]*cos(dir)-spec.ky[j]*sin(dir))*x + 
-      //     (spec.kx[i]*sin(dir)+spec.ky[j]*cos(dir))*y +
-      //      spec.phase[index]);
-
-
-      //adding a direction: change of coordinates
-      // kx2 = spec.kx[i]*cos(dir) - spec.ky[j]*sin(dir);
-      // ky2 = spec.kx[i]*sin(dir) + spec.ky[j]*cos(dir);
-      //
-      // kmod = sqrt(sq(kx2) + sq(ky2));
-      // theta = atan(ky2 / kx2);
-      // a = (spec.kx[i] * x + spec.ky[j] * y + spec.phase[index]);
-      //a = ( kx2*x + ky2*y + spec.phase[index]);
-
-      kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
-      //theta = atan(spec.ky[j] / spec.kx[i]);
-      theta = atan2(spec.ky[j], spec.kx[i]);
-      a = ( spec.kx[i]*x + spec.ky[j]*y + spec.phase[index]);
-
-      u_y +=
-          sqrt(g_ * kmod) * ampl * exp(kmod * z_actual) * cos(a) * sin(theta);
+      double kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
+      if (kmod > 0.) { // fixme: why is kmod sometimes zero!!
+        int index = i*Ntmode + j;
+        double ampl = sqrt(2.*spec.F_kxky[index]*dkx*dky);
+        double z_actual = (z < ampl ? (z) : ampl); // fixme: why?
+        double a = spec.kx[i]*x + spec.ky[j]*y + spec.phase[index];
+        double uampl = sqrt(g_*kmod)*ampl*exp(kmod*z_actual);
+        double cosa = cos(a);
+        u.x += uampl*cosa*spec.kx[i]/kmod;
+        u.y += uampl*cosa*spec.ky[j]/kmod;
+        u.z += uampl*sin(a);
+      }
     }
-  }
-  return u_y;
-}
-
-double u_z(double x, double y, double z, int N_grid, T_Spectrum spec, double dir=0.) 
-{
-  int index = 0;
-  double u_z = 0.0;
-  double ampl = 0.0;
-  double a = 0.0;
-  double z_actual = 0.0;
-  double kmod = 0.0;
-  double dkx = spec.kx[1] - spec.kx[0];
-  double dky = spec.ky[1] - spec.ky[0];
-  int N_mode = spec.N_mode;
-  int Ntmode = 2*N_mode + 1;
-  //double kx2, ky2;
-  for (int i = 0; i < Ntmode; i++) {
-    for (int j = 0; j < Ntmode; j++) {
-      index = i*Ntmode + j;
-      ampl = sqrt(2. * spec.F_kxky[index] * dkx * dky);
-      z_actual = (z < ampl ? (z) : ampl);
-      // kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
-      // //a = (spec.kx[i] * x + spec.ky[j] * y + spec.phase[index]);
-      // a = ( (spec.kx[i]*cos(dir)-spec.ky[j]*sin(dir))*x + 
-      //     (spec.kx[i]*sin(dir)+spec.ky[j]*cos(dir))*y +
-      //      spec.phase[index]);
-
-
-      //adding a direction: change of coordinates
-      // kx2 = spec.kx[i]*cos(dir) - spec.ky[j]*sin(dir);
-      // ky2 = spec.kx[i]*sin(dir) + spec.ky[j]*cos(dir);
-      //
-      // kmod = sqrt(sq(kx2) + sq(ky2));
-      // // a = (spec.kx[i] * x + spec.ky[j] * y + spec.phase[index]);
-      // a = ( kx2*x + ky2*y + spec.phase[index]);
   
-
-      kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
-      a = ( spec.kx[i]*x + spec.ky[j]*y + spec.phase[index]);
-
-      u_z += sqrt(g_ * kmod) * ampl * exp(kmod * z_actual) * sin(a);
-    }
-  }
-  return u_z;
+  return u;
 }
 
+/**
+ 
+## Todos
 
+- use noise() from Basilisk to generate $\phi_{rand}$
+- add the possiblity to switch to other form of spectrum
+- use Basilisk's interpolation instead of mine ?
+- make T_spectrum GPU compatible
 
+## References
 
+~~~bib
+@article{Wu2023,
+	title = {Breaking wave field statistics with a multi-layer model},
+	volume = {968},
+	issn = {0022-1120, 1469-7645},
+	url = {https://www.cambridge.org/core/product/identifier/S0022112023005220/type/journal_article},
+	doi = {10.1017/jfm.2023.522},
+	abstract = {The statistics of breaking wave ﬁelds are characterised within a novel multi-layer framework, which generalises the single-layer Saint-Venant system into a multi-layer and non-hydrostatic formulation of the Navier–Stokes equations. We simulate an ensemble of phase-resolved surface wave ﬁelds in physical space, where strong nonlinearities, including directional wave breaking and the subsequent highly rotational ﬂow motion, are modelled, without surface overturning. We extract the kinematics of wave breaking by identifying breaking fronts and their speed, for freely evolving wave ﬁelds initialised with typical wind wave spectra. The Λ(c) distribution, deﬁned as the length of breaking fronts (per unit area) moving with speed c to c + dc following Phillips (J. Fluid Mech., vol. 156, 1985, pp. 505–531), is reported for a broad range of conditions. We recover the Λ(c) ∝ c−6 scaling without wind forcing for sufﬁciently steep wave ﬁelds. A scaling of Λ(c) based solely on the root-mean-square slope and peak wave phase speed is shown to describe the modelled breaking distributions well. The modelled breaking distributions are in good agreement with ﬁeld measurements and the proposed scaling can be applied successfully to the observational data sets. The present work paves the way for simulations of the turbulent upper ocean directly coupled to a realistic breaking wave dynamics, including Langmuir turbulence, and other sub-mesoscale processes.},
+	pages = {A12},
+	journaltitle = {Journal of Fluid Mechanics},
+	shortjournal = {J. Fluid Mech.},
+	author = {Wu, Jiarong and Popinet, Stéphane and Deike, Luc},
+	urldate = {2024-08-23},
+	date = {2023-08-10},
+	langid = {english},
+}
+~~~
+*/
 
 

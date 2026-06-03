@@ -1,5 +1,7 @@
 /** 
- 
+
+# Direction.c
+
 The goal of this script is to test the ability of the spectrum.h file to
 generate the same spectrum but with different directions (in the physical
 space).
@@ -11,7 +13,7 @@ $$
 \end{aligned}
 $$
 
-we choose $\psi$ following Wu et al. (2023)
+we choose $\psi$ following [Wu et al., 2023](#Wu2023)
 
 $$
 \begin{aligned}
@@ -58,6 +60,8 @@ double dx;
 double x;
 double y;
 int index_a;
+
+/** ## Generate 2D spectrum and surface fields */
 
 int main(){
   
@@ -110,6 +114,13 @@ int main(){
   fwrite(v, sizeof(double), N_cells*N_cells*Ndir, fptr3);
   fclose(fptr3);
 
+  free(eta);
+  free(u);
+  free(v);
+  free(w);
+  for (int d=0; d<Ndir; ++d){
+    free_spectrum(spectrum[d]);
+  }
 }
 
 /** ![eta for direction = pi/4](eta_dir1.png) */
@@ -119,7 +130,28 @@ int main(){
 /** ![F_kxky for direction = pi/4](F_kxky_dir1.png) */
 
 
-//TODO: make this more Basilisk like
+/** TODO: make this more Basilisk like */
 
+/**
+## References
+
+~~~bib
+@article{Wu2023,
+	title = {Breaking wave field statistics with a multi-layer model},
+	volume = {968},
+	issn = {0022-1120, 1469-7645},
+	url = {https://www.cambridge.org/core/product/identifier/S0022112023005220/type/journal_article},
+	doi = {10.1017/jfm.2023.522},
+	abstract = {The statistics of breaking wave ﬁelds are characterised within a novel multi-layer framework, which generalises the single-layer Saint-Venant system into a multi-layer and non-hydrostatic formulation of the Navier–Stokes equations. We simulate an ensemble of phase-resolved surface wave ﬁelds in physical space, where strong nonlinearities, including directional wave breaking and the subsequent highly rotational ﬂow motion, are modelled, without surface overturning. We extract the kinematics of wave breaking by identifying breaking fronts and their speed, for freely evolving wave ﬁelds initialised with typical wind wave spectra. The Λ(c) distribution, deﬁned as the length of breaking fronts (per unit area) moving with speed c to c + dc following Phillips (J. Fluid Mech., vol. 156, 1985, pp. 505–531), is reported for a broad range of conditions. We recover the Λ(c) ∝ c−6 scaling without wind forcing for sufﬁciently steep wave ﬁelds. A scaling of Λ(c) based solely on the root-mean-square slope and peak wave phase speed is shown to describe the modelled breaking distributions well. The modelled breaking distributions are in good agreement with ﬁeld measurements and the proposed scaling can be applied successfully to the observational data sets. The present work paves the way for simulations of the turbulent upper ocean directly coupled to a realistic breaking wave dynamics, including Langmuir turbulence, and other sub-mesoscale processes.},
+	pages = {A12},
+	journaltitle = {Journal of Fluid Mechanics},
+	shortjournal = {J. Fluid Mech.},
+	author = {Wu, Jiarong and Popinet, Stéphane and Deike, Luc},
+	urldate = {2024-08-23},
+	date = {2023-08-10},
+	langid = {english},
+}
+~~~
+*/
 
 
