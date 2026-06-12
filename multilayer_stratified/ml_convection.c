@@ -239,6 +239,7 @@ event viscous_term (i++)
 {
   foreach()
     vertical_diffusion (point, h, T, dt, kappa, qt/(kappa*rho0*cp), T[0,0,0]-strat/(g_*alphaT), 1.);
+  //TODO: ADD HORIZONTAL DIFF
 }
 
 //Writing a 4D netcdf file

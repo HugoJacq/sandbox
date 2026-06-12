@@ -66,6 +66,8 @@ spectrum](./verif_spectrum/verif_spectrum.py)
 
 * [Test of spectrum.h](test_spectrum.h/README.md)
 
+* [Benchmark of Basilisk on some machines](./benchmark_cpu_gpu/README.md)
+
 ## Bugs
 
 * [SOLVED: reduction operator using MPI](./bugmpi/ml_breaking_simple.c)
