@@ -1,0 +1,15 @@
+128
+
+# Multigrid (cuda), 1493 steps, 15.3344 CPU, 18.75 real, 1.3e+06 points.step/s, 8 var
+256
+
+# Multigrid (cuda), 1605 steps, 17.8723 CPU, 18.47 real, 5.69e+06 points.step/s, 8 var
+512
+
+# Multigrid (cuda), 1903 steps, 24.8349 CPU, 26.34 real, 1.89e+07 points.step/s, 8 var
+1024
+
+# Multigrid (cuda), 2189 steps, 31.5336 CPU, 33.92 real, 6.77e+07 points.step/s, 8 var
+2048
+
+# Multigrid (cuda), 2320 steps, 41.4373 CPU, 42.34 real, 2.3e+08 points.step/s, 8 var

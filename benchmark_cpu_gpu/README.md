@@ -59,6 +59,9 @@ You also want to make sure that you have a dedicated graphic card. Basilisk is
 known to run on both AMD and NVIDIA (gaming) gpus but nvidia cards are more combat
 proven. Make sure you have the latest drivers too.
 
+My hardware is [this](results_bench_hardware), see also [this](https://www.notebookcheck.net/Nvidia-RTX-PRO-1000-Blackwell-Generation-Laptop-Benchmarks-and-Specs.997331.0.html)
+
+
 #### Compile
 
 See this [link](https://basilisk.fr/src/INSTALL)
@@ -101,8 +104,11 @@ make
 ```
 The compilation (you might need to modify the Makefile) command is
 ```bash
-hipcc -I/home/jacqhugo/basilisk/src -I.. -DSINGLE_PRECISION -O2 -D__HIP_PLATFORM_NVIDIA__ -g -D_FORTIFY_SOURCE=2 -c -o hip.o hip.c
+cc -I/home/jacqhugo/basilisk/src -I.. -DSINGLE_PRECISION -O2 -D__HIP_PLATFORM_NVIDIA__ -g -D_FORTIFY_SOURCE=2 -c -o hip.o hip.c
 ```
+Note: you might need to `-I/path/to/hipcc/headers`. I used `hipcc` instead of
+`cc` but it should not be necessary.
+
 
 ***Notes***
 
@@ -130,8 +136,7 @@ apt install nvidia-drivers
 #### Run the tests
 
 Run the simple script `benchmark_local.sh` (I'm using a NVIDIA card, you might
-want to modify it if you use AMD). My hardware is [this](results_bench_hardware)
-
+want to modify it if you use AMD). 
 ### Sandbox
 
 The cpu is (16 cores)
@@ -139,7 +144,7 @@ The cpu is (16 cores)
 model name	:
 ```
 
-The gpu is
+The gpu is [this](https://www.techpowerup.com/gpu-specs/geforce-rtx-4090.c3889)
 ```bash
 OpenGL renderer string: NVIDIA GeForce RTX 4090 D/PCIe/SSE2 (stokes.lmm.jussieu.fr)
 Dedicated video memory: 24564 MB
@@ -160,7 +165,9 @@ ___
 ### Jean Zay
 
 The plan is to compile Basilisk on Jean-Zay (qcc), build the library GLFW,
-compile the code and then run it
+compile the code and then run it.
+
+The GPU is [this](https://www.techpowerup.com/gpu-specs/a100-pcie-40-gb.c3623)
 
 - ***Step 1*** : compile Basilisk on the HPC
 
@@ -210,13 +217,9 @@ export Basilisk's path by adding something like this to your $HOME/.bashrc
 echo 'export BASILISK=$HOME/basilisk/src' >> ~/.bashrc
 ```
 
-- Step 2: compile and run the simulation
-
-
-
 ___
 
-- ***Step 2*** : Compile GLFW
+- ***Step 2*** : Compile GLFW (WIP)
 
 Clone the repo (e.g in $HOME/lib)
 ```bash
@@ -241,27 +244,31 @@ ___
 
 - ***Step 3*** : compile the code
 
-04/06/26 16h: j'essaye de faire `make turbulence.gpu.tst` mais j'ai l'erreur 
-`/linkhome/rech/genige01/uji61qv/work/basilisk/src/grid/gpu/gpu.h:2:10: fatal error: GLFW/glfw3.h: No such file or directory`
+We want to compile the code for each backend. Examples will use the CUDA
+backend.
 
-Copy the slurm file [compileJZ_gpu.slurm](compileJZ_gpu.slurm) and
+Copy to the HPC the simple test case
+[`turbulence_benchmark.c`](turbulence_benchmark.c) (a modified version of this
+[turbulence.c](https://basilisk.fr/src/examples/turbulence.c) that just outputs
+snapshot instead of a movie)
+
+Copy the slurm file [compile_JZ_cuda.slurm](compile_JZ_cuda.slurm) in the same
+folder as the `.c` source file and
 submit the job
 ```bash
-sbatch compileJZ_gpu.slurm
+sbatch compile_JZ_cuda.slurm
 ```
 
 ___
 
 - ***Step 4***: run the code
 
-Copy this slurm file [runJZ_gpu.slurm](runJZ_gpu.slurm) where the `.c` file is
+Copy this slurm file [run_JZ_cuda.slurm](run_JZ_cuda.slurm)
 Submit the job
 ```bash
-sbatch runJZ_gpu.slurm
+sbatch run_JZ_cuda.slurm
 ```
 
-I still need to link properly the GLFW that I built.
-I need to built the .so of the lib
 
 ***JEAN ZAY TIPS***
 - see loading of machine : `module load python` then `slurmtop`
@@ -275,6 +282,8 @@ noeud de visu gpu nvidia ?
 I use BIGFOOT.
 The plan is to use guix to get the desired compilation environnement, build
 basilisk, build GLFW, compile the turbulence.c code, run the code.
+
+The GPU is [this](https://www.techpowerup.com/gpu-specs/tesla-v100-pcie-16-gb.c2957)(16Go version) or [this](https://www.techpowerup.com/gpu-specs/tesla-v100-pcie-32-gb.c3184)(32Go version)
 
 As of 12/06/26: the code runs with CUDA, not OpenGL
 
@@ -466,3 +475,5 @@ maybe easier than bigfoot, can run on cpu partition only
 - use darcs everywhere it runs. Less trouble for keeping up with version ...
 - use containers for: portability, ease of use
 - use profiling tools from nvidia, amd ?
+- OpenGL code compiles but when run it crashes immediately without explicit line
+  (both JeanZay and Gricad/Bigfoot)

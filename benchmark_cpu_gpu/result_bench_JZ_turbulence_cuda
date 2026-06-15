@@ -1,0 +1,199 @@
+cuda
+128
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 1493 steps, 12.3313 CPU, 13.34 real, 1.83e+06 points.step/s, 8 var
+   calls    total     self   % total   function
+  218757    11.00     6.27     47.0%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+      56     4.32     4.32     32.4%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    2992    11.09     1.73     13.0%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+  218760     0.34     0.34      2.5%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    4486     1.60     0.19      1.4%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+    4486     0.14     0.14      1.1%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    1494    12.47     0.08      0.6%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    1494     0.08     0.08      0.6%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+    1494     0.07     0.07      0.6%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+    1494     0.28     0.03      0.3%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+    1494     0.41     0.02      0.2%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    1494     0.23     0.02      0.1%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+    1494    12.68     0.02      0.1%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+       2     0.01     0.01      0.1%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+       1    13.34     0.01      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+    1494    12.48     0.00      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    1494     0.42     0.00      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+      56     0.00     0.00      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+      56     4.32     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       1     0.00     0.00      0.0%   init_0():turbulence.cuda.c:33
+       2     0.00     0.00      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+       1     0.01     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.00     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+256
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 1605 steps, 15.3244 CPU, 15.97 real, 6.59e+06 points.step/s, 8 var
+   calls    total     self   % total   function
+  268155    13.11     7.72     48.3%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+      62     4.89     4.89     30.6%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    3216    13.93     2.15     13.4%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+  268158     0.42     0.42      2.6%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    4822     2.03     0.26      1.6%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+    4822     0.15     0.15      1.0%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    1606    15.03     0.09      0.5%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    1606     0.08     0.08      0.5%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+    1606     0.07     0.07      0.5%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+    1606     0.31     0.04      0.3%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+    1606     0.45     0.02      0.1%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    1606    15.26     0.02      0.1%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+    1606     0.24     0.02      0.1%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+       2     0.01     0.01      0.1%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+       1    15.97     0.01      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+    1606    15.03     0.01      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    1606     0.45     0.01      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+      62     0.00     0.00      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+      62     4.90     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       1     0.00     0.00      0.0%   init_0():turbulence.cuda.c:33
+       2     0.00     0.00      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+       1     0.01     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.01     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
+512
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 1902 steps, 19.5433 CPU, 20.09 real, 2.48e+07 points.step/s, 8 var
+   calls    total     self   % total   function
+  358216    16.13    10.30     51.3%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+      68     5.18     5.18     25.8%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    3841    18.11     2.94     14.6%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+  358219     0.56     0.56      2.8%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    5744     2.61     0.44      2.2%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+    5744     0.18     0.18      0.9%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    1903    19.05     0.12      0.6%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    1903     0.08     0.08      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+    1903     0.08     0.08      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+    1903     0.35     0.06      0.3%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+    1903    19.29     0.03      0.2%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+    1903     0.50     0.03      0.2%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    1903     0.26     0.03      0.1%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+       2     0.03     0.03      0.1%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+       1    20.09     0.01      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+    1903    19.05     0.01      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    1903     0.50     0.01      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+      68     0.00     0.00      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+       1     0.00     0.00      0.0%   init_0():turbulence.cuda.c:33
+      68     5.19     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       2     0.00     0.00      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+       1     0.02     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.01     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+1024
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 2186 steps, 24.5532 CPU, 25.14 real, 9.12e+07 points.step/s, 8 var
+   calls    total     self   % total   function
+  452962    19.45    13.05     51.9%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+      74     5.61     5.61     22.3%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    4426    22.72     4.02     16.0%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+    6613     3.26     0.71      2.8%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+  452965     0.71     0.71      2.8%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    2187    23.83     0.22      0.9%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    6613     0.21     0.21      0.9%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    2187     0.43     0.12      0.5%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+       2     0.10     0.10      0.4%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+    2187     0.09     0.09      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+    2187     0.09     0.09      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+    2187     0.62     0.05      0.2%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    2187    24.11     0.05      0.2%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+    2187     0.29     0.05      0.2%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+       1    25.15     0.01      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+       1     0.01     0.01      0.0%   init_0():turbulence.cuda.c:33
+    2187    23.84     0.01      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    2187     0.62     0.01      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+      74     0.00     0.00      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+       2     0.00     0.00      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+      74     5.62     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.07     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.03     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+2048
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 2316 steps, 31.2345 CPU, 31.83 real, 3.05e+08 points.step/s, 8 var
+   calls    total     self   % total   function
+  533148    22.12    15.39     48.3%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+    4727    28.03     6.08     19.1%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+      80     5.81     5.81     18.3%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    7044     4.20     1.36      4.3%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+  533151     0.84     0.84      2.6%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    2317    29.65     0.59      1.8%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    2317     0.74     0.41      1.3%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+       2     0.32     0.32      1.0%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+    7044     0.30     0.30      1.0%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    2317     1.02     0.15      0.5%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    2317     0.42     0.15      0.5%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+    2317    30.02     0.15      0.5%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+    2317     0.12     0.12      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+    2317     0.12     0.12      0.4%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+       1     0.03     0.03      0.1%   init_0():turbulence.cuda.c:33
+       1    31.83     0.02      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+    2317    29.65     0.01      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    2317     1.03     0.01      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+       2     0.01     0.01      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+      80     0.00     0.00      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+      80     5.82     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       1     0.19     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.13     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+4096
+src/output.h:485: warning: cannot find 'convert'
+src/output.h:485: warning: falling back to raw PPM outputs
+
+# Multigrid (cuda), 2668 steps, 51.3367 CPU, 52.17 real, 8.58e+08 points.step/s, 8 var
+   calls    total     self   % total   function
+  672152    27.15    19.40     37.2%   setup_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1747
+    5470    42.43    14.08     27.0%   mg_cycle():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:92
+      86     6.60     6.60     12.7%   load_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1165
+    8139     6.19     2.82      5.4%   multigrid_restriction():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../multigrid-common.h:459
+    2669    46.25     2.23      4.3%   mg_solve():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:230
+    2669     2.01     1.68      3.2%   tracer_fluxes():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:61
+       2     1.30     1.30      2.5%   output_ppm():/linkhome/rech/genige01/uji61qv/basilisk/src/output.h:689
+  672155     1.07     1.06      2.0%   gpu_cpu_sync():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1598
+    8139     0.68     0.68      1.3%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:381
+    2669     2.72     0.57      1.1%   advection():/linkhome/rech/genige01/uji61qv/basilisk/src/bcg.h:99
+    2669    47.05     0.56      1.1%   velocity_0():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:87
+    2669     0.96     0.55      1.1%   velocity():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:54
+    2669     0.25     0.25      0.5%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:163
+    2669     0.24     0.24      0.5%   gpu_reduction():/linkhome/rech/genige01/uji61qv/basilisk/src/timestep.h:7
+       1     0.12     0.12      0.2%   init_0():turbulence.cuda.c:33
+       1    52.19     0.03      0.1%   run():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:37
+       2     0.01     0.01      0.0%   boundary_internal():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../cartesian-common.h:591
+    2669    46.25     0.01      0.0%   poisson():/linkhome/rech/genige01/uji61qv/basilisk/src/poisson.h:460
+    2669     2.73     0.01      0.0%   tracer_advection():/linkhome/rech/genige01/uji61qv/basilisk/src/tracer.h:45
+      86     0.01     0.01      0.0%   build_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1130
+      86     6.61     0.00      0.0%   compile_shader():/linkhome/rech/genige01/uji61qv/basilisk/src/grid/cuda/../gpu/grid.h:1552
+       1     0.75     0.00      0.0%   snap_ini():turbulence.cuda.c:51
+       1     0.00     0.00      0.0%   defaults_1():/linkhome/rech/genige01/uji61qv/basilisk/src/navier-stokes/stream.h:63
+       1     0.56     0.00      0.0%   snap_end():turbulence.cuda.c:54
+       1     0.00     0.00      0.0%   defaults_0():/linkhome/rech/genige01/uji61qv/basilisk/src/advection.h:40
+       1     0.00     0.00      0.0%   defaults():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:44
+       1     0.00     0.00      0.0%   cleanup():/linkhome/rech/genige01/uji61qv/basilisk/src/run.h:52
