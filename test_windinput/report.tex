@@ -1,0 +1,179 @@
+\documentclass{article}
+\usepackage{subfig}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+\geometry{hmargin=2cm,vmargin=1.5cm}
+
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+
+\title{Notes on energy conservation using the multilayer}
+\author{Hugo Jacquet}
+\date{21 July 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Goal}
+
+My goal is to study the interaction between a breaking wave field in different
+environmental conditions. A first study will be on the interaction between
+breaking, Langmuir cells and a stable stratification. For this, I need a
+somewhate steady wave field, which is possible thanks to the wind forcing
+described in ``Multilayer simulation of wind-forced breaking wave1
+fields'' by Rui Yang and others.
+
+\section{Setup}
+
+Before looking at real sea state, I am working on a 2D wave to implement this
+forcing. This setup goals are:
+\begin{enumerate}
+
+	\item verify that the multilayer model is able to reproduce the wave decay
+	      predicted by Lamb (1932)
+
+	\item implement the wind forcing
+
+	\item verify that with the nudging term proposed by Rui Yang in his preprint I
+	      can get a statically steady sea state
+
+\end{enumerate}
+
+
+My configuration is available at
+\url{https://basilisk.fr/sandbox/hugoj/test_windinput/}. The first point is to
+verify that energy decay following the exponential decay $E(t)/E_0=e^{-4 \nu k^2
+	t}$. I initialize $\eta$ and the currents following the linear theory, then I
+let the wave decay due to viscous dissipation. I use isotropic dissipation by
+adding to the default vertical momentum diffusion horizontal diffusion with the
+\verb|horizontal_diffusion| event.
+
+
+My base case uses 10 periods for a box of 100 m at $R_e=400$ ($\nu=1/R_e=2e{-3}$
+m2/s), with a depth of 5 m and a steepness $ak=0.01$. Numerics are using
+defaults values (CFL=0.5, CFL\_H=1, theta\_H=0.5, theta=1.3, DT=HUGE). My small
+script \verb|run_test_instrumented.sh| runs my base test case, the one from
+Rui's preprint, and it also tests other values for different parameters.
+
+Since I see some problem with energy conservation, I am looking for dissipative
+processes in the numerics used. I use a version of the source code that allows
+to count the number of time a gradient limiter is triggered, and the number of
+time the limiter is actually applied. Output of this diagnostic is in the
+\verb|log| file. I identified four limiters in the
+multilayer code: i) A CFL limiter in \verb|hydro.h| that ensure positiveness of
+the layer heights; ii) A general gradient limiter used in the BCG advection
+scheme (minmod but with a counter, see the \verb|no_forcing_instrumented.c| file
+where I redefine the gradient of scalars); iii) A limiter in the remap
+polynomial reconstruction that avoid creating new extrema when remapping (in
+\verb|remapc.h|); iv) A limiter that models the breaking by limiting the maximum
+vertical velocity (in \verb|hydro.h| and \verb|nh.h|).
+
+
+\section{Observations}
+
+The base case shows a decay of energy that seems to match the theoretical decay.
+However, when changing some parameters I observe that this is sometimes not the case
+anymore, or even that the energy grows. \\
+
+\subsection{Base case results}
+
+Figure \ref{fig:base} shows the normalized energy decay for my base case.
+Numerical and analytical results are qualitatively close, energy decay (as it
+should). Explicit viscosity seems to be the driver for the dissipation of the
+monochromatic wave.
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=.5\linewidth]{results_instrumented/base/energy.png}
+	\caption{Base case results}
+	\label{fig:base}
+\end{figure}
+
+\subsection{Rui's case is growing in energy despite no forcing}
+
+Figure \ref{fig:Ruis} clearly shows that something is wrong with my code in this
+configuration. Both kinetic and potential energy increase, which should not
+happen in this no-forcing configuration.
+
+\begin{figure}
+	\center
+	\includegraphics[width=0.5\textwidth]{results_instrumented/Ruis_thetah0.5/energy.png}
+	\caption{Normalized energy evolution for parameters from Rui's preprint}
+	\label{fig:Ruis}
+\end{figure}
+
+\subsection{Base case seems converged, but it's not}
+
+In the base case (and this is the default behavior in Basilisk), the maximum
+time-step is set to \verb|HUGE|, which is just a big number, and the actual
+time-step used in the solver is defined by the CFL condition(s). There are two
+CFL in the multilayer, one related to the barotropic part of the solver
+(advection of $\eta$) and one related to the non-hydrostatic part (advection of
+currents $u$ and $v$). A discussion about the influence of the CFL is below. The
+user can restrict the value of the maximum time-step by prescribing \verb|DT|.
+Figure \ref{fig:changeDT} shows the influence of this maximum time-step on the
+energy evolution. When \verb|DT| is automatically chosen (brown line), the
+energy decay is close to the theoretical value and to the value \verb|DT| = 0.1
+s. When inspecting the actual, variable time-step it is close to 0.1 s, so we
+expect the purple and brown line to be close to each other. However, when
+decreasing the maximum time-step I observe that dissipation decreases. Reducing
+numerical dissipation when increasing (temporal) resolution is expected, but my
+base case seems to be close to the theoretical expression, and so I expected it
+to be already converged. I am now wondering if this base case is really
+converged or is it just ``luck'' that I get an energy evolution close to the
+analytic solution...
+
+In the same reasoning, increasing resolution through $N$ should thus not change
+the result if the base case is converged. Figure \ref{fig:changeN} shows that
+this is not the case as when increasing the spatial resolution the dissipation
+decreases to a point where the highest resolution simulation, which I expect to
+be the most resolved, is not as dissipative as the theoretical expression. I
+expect the low resolution simulations to be over dissipative due to the combined
+effect of the numerical and explicit diffusions, but the fact that when explicit
+diffusion is the main dissipation mechanism the energy decay doesn't match the
+prediction is beyond my understanding. When increasing the temporal resolution,
+we get the first observation.
+
+\begin{figure}
+	\center
+	\includegraphics[width=0.5\textwidth]{results_instrumented/change_of_DT.png}
+	\caption{Normalized energy evolution for the base set of parameters but the maximum
+		time-step is limited by hand and decreased}
+	\label{fig:changeDT}
+\end{figure}
+
+
+\begin{figure}
+	\center
+	\includegraphics[width=0.5\textwidth]{results_instrumented/change_of_N.png}
+	\caption{Normalized energy decay with varying horizontal resolution}
+	\label{fig:changeN}
+\end{figure}
+
+\subsection{A well resolved case}
+
+I need a test case where I know the solution is resolved. If this case is not
+well reproduced by the code, then I need to first fix this problem. I thus build
+a case that should be resolved with 100 points per wavelength, 100 points per
+period and a Re high enough to get a scale separation between viscous
+dissipation and wave dynamic.
+
+
+
+\subsection{Change of regime no longer matches the analytical law}
+
+In an effort to bridge between the set of parameters from Rui's preprint and my
+base case, I investigated the influence of the value of the explicit viscosity
+on the solution. For this test, I use a linear wave with 1 wavelength (compared
+to the test before with 10 wavelengths).
+
+
+
+
+\end{document}
+

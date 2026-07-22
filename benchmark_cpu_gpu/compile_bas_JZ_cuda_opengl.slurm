@@ -7,6 +7,7 @@
 #SBATCH --partition=compil
 #SBATCH -A rkm@cpu
 
+
 # print all commands
 set -x
 
@@ -18,31 +19,33 @@ module purge
 # -> make sure DBUILD_SHARED_LIBS=ON
 # -> files https://github.com/glfw/glfw.git
 
-module load cmake/3.31.4
-module load gcc/14.2.0
+if [ 0 ]; then
 
-cd $HOME
-mkdir lib
-cd lib
-git clone https://github.com/glfw/glfw.git
-cd glfw
-rm -r build # to reset any previous cmake variable declaration
-mkdir build
+	module load cmake/3.31.4
+	module load gcc/14.2.0
 
-CC=gcc cmake -S . -B build \
-  -DCMAKE_INSTALL_PREFIX=$HOME/lib/glfw/install \
-  -DBUILD_SHARED_LIBS=ON \
-  -DGLFW_BUILD_EXAMPLES=OFF \
-  -DGLFW_BUILD_TESTS=OFF \
-  -DGLFW_BUILD_DOCS=OFF \
-  -DGLFW_BUILD_WAYLAND=OFF \
-  -DGLFW_BUILD_X11=OFF
+	cd $HOME
+	mkdir lib; cd lib;
+	git clone https://github.com/glfw/glfw.git
+	cd glfw
+	rm -r build # to reset any previous cmake variable declaration
+	kdir build
 
-cmake --build build
-cmake --install build
+	C=gcc cmake -S . -B build \
+	 -DCMAKE_INSTALL_PREFIX=$HOME/lib/glfw/install \
+	 -DBUILD_SHARED_LIBS=ON \
+	 -DGLFW_BUILD_EXAMPLES=OFF \
+	 -DGLFW_BUILD_TESTS=OFF \
+	 -DGLFW_BUILD_DOCS=OFF \
+	 -DGLFW_BUILD_WAYLAND=OFF \
+	 -DGLFW_BUILD_X11=OFF
 
-module purge
-echo 'Done compiling GLFW'
+	make --build build
+	make --install build
+
+	module purge
+	echo 'Done compiling GLFW'
+fi
 #==============================
 # STEP 2a: COMPILE QCC
 
@@ -52,28 +55,28 @@ module load cuda/12.6.3
 export BASILISK=$HOME/basilisk/src
 cd $BASILISK
 
-# cuda env
-module load cuda/12.6.3
-
 # qcc, bview
 ln -sf config.gcc config # fixme: use proper JeanZay config
-make
+make qcc
 
 echo 'Done compiling qcc'
 #=============================
 # STEP 2b: COMPILE GPU BACKENDS
 
-# gpu (opengl)
-# I need glfw.h that is exposed with the glfw package of the basilisk_profile
-cd $BASILISK/grid/gpu
-export LIBGLFW=$HOME/lib/glfw/install # STEP 1
-INCLUDE="${LIBGLFW}/include"
-CFLAGS="-I${INCLUDE}"
-CFLAGS=$CFLAGS make
-echo 'Done compiling opengl backend'
+if [ 0 ]; then
+	# gpu (opengl)
+	# I need glfw.h 
+	cd $BASILISK/grid/gpu
+	export LIBGLFW=$HOME/lib/glfw/install # STEP 1
+	INCLUDE="${LIBGLFW}/include"
+	CFLAGS="-I${INCLUDE}"
+	CFLAGS=$CFLAGS make
+	echo 'Done compiling opengl backend'
+fi
 
 # gpu (cuda)
-# I cuda.h and nvrtc.h that are exposed with the cuda_env
 cd $BASILISK/grid/cuda
-CFLAGS=$CFLAGS make
+CFLAGS=$CFLAGS make libbuda.a
 echo 'Done compiling cuda backend'
+
+
