@@ -1,6 +1,7 @@
 \documentclass{article}
-\usepackage{subfig}
+%\usepackage{subfig}
 \usepackage{graphicx} % Required for inserting images
+\usepackage{subcaption}
 \usepackage{geometry}
 \usepackage{hyperref}
 \usepackage{amssymb}
@@ -23,7 +24,7 @@
 My goal is to study the interaction between a breaking wave field in different
 environmental conditions. A first study will be on the interaction between
 breaking, Langmuir cells and a stable stratification. For this, I need a
-somewhate steady wave field, which is possible thanks to the wind forcing
+somewhat steady wave field, which is possible thanks to the wind forcing
 described in ``Multilayer simulation of wind-forced breaking wave1
 fields'' by Rui Yang and others.
 
@@ -57,7 +58,9 @@ My base case uses 10 periods for a box of 100 m at $R_e=400$ ($\nu=1/R_e=2e{-3}$
 m2/s), with a depth of 5 m and a steepness $ak=0.01$. Numerics are using
 defaults values (CFL=0.5, CFL\_H=1, theta\_H=0.5, theta=1.3, DT=HUGE). My small
 script \verb|run_test_instrumented.sh| runs my base test case, the one from
-Rui's preprint, and it also tests other values for different parameters.
+Rui's preprint, and it also tests other values for different parameters. See the
+file for all the parameters tested. The file \verb|figures_report.py| is used to
+plot comparison between cases.
 
 Since I see some problem with energy conservation, I am looking for dissipative
 processes in the numerics used. I use a version of the source code that allows
@@ -77,8 +80,16 @@ vertical velocity (in \verb|hydro.h| and \verb|nh.h|).
 
 The base case shows a decay of energy that seems to match the theoretical decay.
 However, when changing some parameters I observe that this is sometimes not the case
-anymore, or even that the energy grows. \\
+anymore, or even that the energy grows. My hope was that with the instrumented
+code, I could see some limiter overused. This is not the case, as only the
+gradient limiter used in the BCG scheme is triggered (about 2\% of these
+activations are actually limiting a gradient) and the other are not. This behavior is common
+for all my experiments. When a simulation starts to diverge, this limiter uses
+increases greatly, but the other stay at 0. You can check the occurence of
+limiters in the \verb|limiters.png| files for each test case.\\
 
+
+\newpage
 \subsection{Base case results}
 
 Figure \ref{fig:base} shows the normalized energy decay for my base case.
@@ -87,26 +98,40 @@ should). Explicit viscosity seems to be the driver for the dissipation of the
 monochromatic wave.
 
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=.5\linewidth]{results_instrumented/base/energy.png}
 	\caption{Base case results}
 	\label{fig:base}
 \end{figure}
 
+\newpage
 \subsection{Rui's case is growing in energy despite no forcing}
 
 Figure \ref{fig:Ruis} clearly shows that something is wrong with my code in this
 configuration. Both kinetic and potential energy increase, which should not
-happen in this no-forcing configuration.
+happen in this no-forcing configuration. I tried to increase $\theta_H$ to
+stabilize the simulation but the simulation seems to crash at some point despite
+that.
 
-\begin{figure}
-	\center
-	\includegraphics[width=0.5\textwidth]{results_instrumented/Ruis_thetah0.5/energy.png}
-	\caption{Normalized energy evolution for parameters from Rui's preprint}
+\begin{figure}[h]
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{results_instrumented/Ruis_thetah0.5/energy.png}
+		\caption{$\theta_H=0.5$}
+	\end{subfigure}%
+	\hfill
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{results_instrumented/Ruis_thetah0.51/energy.png}
+		\caption{$\theta_H=0.51$}
+	\end{subfigure}
+	\caption{Normalized energy evolution for parameters from Rui's preprint. Two
+		values of $\theta_H$ are tested to try to stabilize the simulation.}
 	\label{fig:Ruis}
 \end{figure}
 
+\newpage
 \subsection{Base case seems converged, but it's not}
 
 In the base case (and this is the default behavior in Basilisk), the maximum
@@ -116,7 +141,7 @@ CFL in the multilayer, one related to the barotropic part of the solver
 (advection of $\eta$) and one related to the non-hydrostatic part (advection of
 currents $u$ and $v$). A discussion about the influence of the CFL is below. The
 user can restrict the value of the maximum time-step by prescribing \verb|DT|.
-Figure \ref{fig:changeDT} shows the influence of this maximum time-step on the
+Figure \ref{fig:changeRes}a shows the influence of this maximum time-step on the
 energy evolution. When \verb|DT| is automatically chosen (brown line), the
 energy decay is close to the theoretical value and to the value \verb|DT| = 0.1
 s. When inspecting the actual, variable time-step it is close to 0.1 s, so we
@@ -129,51 +154,83 @@ converged or is it just ``luck'' that I get an energy evolution close to the
 analytic solution...
 
 In the same reasoning, increasing resolution through $N$ should thus not change
-the result if the base case is converged. Figure \ref{fig:changeN} shows that
+the result if the base case is converged. Figure \ref{fig:changeRes}b shows that
 this is not the case as when increasing the spatial resolution the dissipation
 decreases to a point where the highest resolution simulation, which I expect to
-be the most resolved, is not as dissipative as the theoretical expression. I
-expect the low resolution simulations to be over dissipative due to the combined
-effect of the numerical and explicit diffusions, but the fact that when explicit
-diffusion is the main dissipation mechanism the energy decay doesn't match the
-prediction is beyond my understanding. When increasing the temporal resolution,
-we get the first observation.
+be the most resolved, is not as dissipative as the theoretical expression.
 
-\begin{figure}
-	\center
-	\includegraphics[width=0.5\textwidth]{results_instrumented/change_of_DT.png}
-	\caption{Normalized energy evolution for the base set of parameters but the maximum
-		time-step is limited by hand and decreased}
-	\label{fig:changeDT}
+I expect the low resolution simulations to be over dissipative due to the
+combined effect of the numerical and explicit diffusions.  The fact that when
+explicit diffusion is the main dissipation mechanism the energy decay doesn't
+match the prediction might be because the analytical result has been derived
+with a scale separation hypothesis between wave dynamic and viscosity scale,
+which may not be the case here with $\nu=1/Re=1/400=0.0025$ m$^{2}$.s$^{-1}$.
+
+
+\begin{figure}[h]
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{results_instrumented/change_of_DT.png}
+		\caption{Sensibility to the maximum time-step}
+	\end{subfigure}%
+	\hfill
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{results_instrumented/change_of_N.png}
+		\caption{Sensibility to the horizontal resolution}
+	\end{subfigure}
+	\caption{Normalized energy evolution for the base set of parameters but
+		different temporal and spatial resolutions are tested}
+	\label{fig:changeRes}
 \end{figure}
 
-
-\begin{figure}
-	\center
-	\includegraphics[width=0.5\textwidth]{results_instrumented/change_of_N.png}
-	\caption{Normalized energy decay with varying horizontal resolution}
-	\label{fig:changeN}
-\end{figure}
-
+\newpage
 \subsection{A well resolved case}
 
 I need a test case where I know the solution is resolved. If this case is not
 well reproduced by the code, then I need to first fix this problem. I thus build
 a case that should be resolved with 100 points per wavelength, 100 points per
 period and a Re high enough to get a scale separation between viscous
-dissipation and wave dynamic.
+dissipation and wave dynamic. Figure \ref{fig:resolved} shows the energy decay
+is such case. The parameter $\theta_H=0.51$ to stabilize the solution. Total
+energy decreases over the whole simulation time and it is somewhat close to the
+analytical law, but it still increases at some time-step (for example at
+$t/T_0=25$), which is not physical. The apparent envelope on the plot is due to
+high frequency oscillations of the kinetic and potential energy.
 
+\begin{figure}[h]
+	\center
+	\includegraphics[width=0.5\textwidth]{results_instrumented/resolved_thetah0.51/energy.png}
+	\caption{Normalized energy decay for a case with 100 points per period and per
+		wavelength. This case should be numerically converged. }
+	\label{fig:resolved}
+\end{figure}
 
+\newpage
+\subsection{Influence of the steepness on the solution}
 
-\subsection{Change of regime no longer matches the analytical law}
+I now investigate the role of $ak$ on the solution. For high steepness, I do not
+expect the energy to follow the analytical decay because the small steepness
+hypothesis of the linear theory is no longer verified. However, I still expect
+the energy to decay. Figure \ref{fig:changeAK} shows the normalized energy decay
+for a few values of $ak$ (the rest of the parameters follows the base case). The
+case with $ak=0.01$ correspond to the base case (Figure \ref{fig:base}).
+Qualitatively, the higher the $ak$, the sooner the simulation diverges and
+energy increases/explodes up until values $ak=0.1$ or $ak=0.2$ where the energy
+grows from the start. Investigation of the netcdf file for the case $ak=0.1$
+shows that the growth in total energy comes from the kinetic energy, and more
+specifically from the vertical velocity. Oscillations are conserved, but their
+amplitude grows with time. Note also that the results from Figure
+\ref{fig:changeAK} should not be concerned by breaking, as the steepness is far
+from the critical steepness $ak_{crit}=0.35$, so the simulation cannot be
+stabilized by the extra dissipation from the breaking limiter.
 
-In an effort to bridge between the set of parameters from Rui's preprint and my
-base case, I investigated the influence of the value of the explicit viscosity
-on the solution. For this test, I use a linear wave with 1 wavelength (compared
-to the test before with 10 wavelengths).
-
-
-
-
+\begin{figure}[h]
+	\center
+	\includegraphics[width=0.5\textwidth]{results_instrumented/change_of_ak.png}
+	\caption{Normalized energy when using the base set of parameters but using
+		different values for the steepness $ak$.}
+	\label{fig:changeAK}
+\end{figure}
 \end{document}
 
