@@ -204,7 +204,7 @@ def plot_one_case(path, file):
 # ===========================
 # Plotting energy evolution
 # ===========================
-if 0:
+if 1:
     print("> plotting energy for each case")
     basepath = "results_instrumented/"
     folders = list_folders(basepath)
@@ -330,6 +330,7 @@ folders = {
     "0.08": results + "ak_0.08/",
     "0.1": results + "ak_0.1/",
     "0.2": results + "ak_0.2/",
+    "0.3": results + "ak_0.3/",
 }
 
 outpath = results + "change_of_ak.png"

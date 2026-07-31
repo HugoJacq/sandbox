@@ -1,0 +1,52 @@
+"""
+Plot a 3D volume (time, level, y, x) with its free surface (from eta) and
+a colored interior, using xarray (to read the NetCDF) + PyVista (to render).
+
+Assumes your NetCDF has, e.g.:
+    T(time, level, y, x)   -- the variable to color by
+    Z(time, level, y, x)   -- vertical coordinate of each level (depth/height,
+                               terrain- or sigma-following -> varies with
+                               level, y AND x)
+    eta(time, y, x)         -- free-surface elevation (already in the file!)
+    x(x), y(y)               -- horizontal coordinates (1D, regular or not)
+
+Adjust variable/dimension names below to match your file.
+
+conda env is visu3D
+"""
+
+import numpy as np
+import xarray as xr
+import pyvista as pv
+
+# add libpy
+import os.path
+import sys
+
+dirname = os.path.dirname(__file__)
+filename = os.path.join(dirname, "../libpy/")
+sys.path.append(filename)
+# from tools import build_z_at_t
+# from tools_plots import (
+#     build_3Dgrid,
+#     vertex_coordinates,
+#     compute_interfaces,
+#     interfaces_to_vertices,
+#     add_mesh_domain_side,
+#     add_ticks,
+#     SliceExplorer,
+#     SliceExplorer2,
+# )
+#
+from visu3D2 import render_movie
+
+
+# files
+# myfile = "N512_nl30_0.000002_Tinizl/out.nc"
+myfile = "~/basilisk/wiki/sandbox/hugoj/breaking_strat/ml_breaking_strat.gpu/out.nc"
+filemovie = "wave.mp4"
+render_movie(myfile, "wave")
+
+# todo:
+# - write a gif animation (I need to output more data first)
+# - learn how to save a snapshot png

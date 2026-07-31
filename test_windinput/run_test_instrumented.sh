@@ -45,14 +45,8 @@ mkdir -p $OUT
 
 # A simple function that copy output files to a folder
 save_results() {
-  # produce figures
-  #rm $NAME/plots
-  #rm $NAME/*{.png,.svg}
-  #make $NAME/plots
-  # save them
   mkdir -p $1
   cp $NAME/{out,log} $1
-  #echo "N=$N nl=$NL NT0=$NT0 RE=$RE L0=$L0 k=$K_ h=$H_ ak=$AK CFL_H=$CFL_H CFL=$CFL theta_H=$THETA_H max_slope=$MAXSLOPE theta=$THETA" >$1/parameters
 }
 
 # =======================
@@ -88,12 +82,20 @@ save_results() {
 # save_results $OUT/Ruis_thetah0.51
 
 # ------------------------------------------
-echo 'increasing theta_h for stability'
+# echo 'increasing theta_h for stability'
+# cd $NAME
+# ./$NAME 2048 15 300. 40000 1. 1. 5. 0.05 1.0 0.5 0.55 1.0 1.3 2>log >out
+# cd ..
+# mv $NAME/out $OUT/Ruis_thetah0.55/out.nc
+# save_results $OUT/Ruis_thetah0.55
+
+# ------------------------------------------
+echo "Rui's case but with very small CFL"
 cd $NAME
-./$NAME 2048 15 300. 40000 1. 1. 5. 0.05 1.0 0.5 0.55 1.0 1.3 2>log >out
+./$NAME 2048 15 100. 40000 1. 1. 5. 0.05 0.05 0.05 0.51 1.0 1.3 2>log >out
 cd ..
-mv $NAME/out $OUT/Ruis_thetah0.55/out.nc
-save_results $OUT/Ruis_thetah0.55
+mv $NAME/out $OUT/Ruis_thetah_smallCFL/out.nc
+save_results $OUT/Ruis_thetah_smallCFL
 
 # =======================
 # A well resolved case
@@ -178,19 +180,19 @@ save_results $OUT/Ruis_thetah0.55
 # RE=$REDEF
 
 # ------------------------------------------
-echo 'TESTING ak'
-AKDEF=$AK
-list_AK=(0.3) # 0.05 0.08 0.1 0.2 0.3
-for i in "${list_AK[@]}"; do
-  echo $i
-  AK=$i
-  cd $NAME
-  ./$NAME $N $NL $NT0 $RE $L0 $K_ $H_ $AK $CFL_H $CFL $THETA_H $MAXSLOPE $THETA 2>log >out
-  cd ..
-  echo $?
-  save_results $OUT/ak_$i
-done
-AK=$AKDEF
+# echo 'TESTING ak'
+# AKDEF=$AK
+# list_AK=(0.05 0.08 0.1 0.2 0.3) #
+# for i in "${list_AK[@]}"; do
+#   echo $i
+#   AK=$i
+#   cd $NAME
+#   ./$NAME $N $NL $NT0 $RE $L0 $K_ $H_ $AK $CFL_H $CFL $THETA_H $MAXSLOPE $THETA 2>log >out
+#   cd ..
+#   echo $?
+#   save_results $OUT/ak_$i
+# done
+# AK=$AKDEF
 
 # ------------------------------------------
 # echo 'TESTING theta'

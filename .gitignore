@@ -184,3 +184,6 @@ test_windinput/no_forcing_instrumented/
 test_windinput/recap_2/
 test_windinput/stokes.c
 test_windinput/stokes.h
+
+test_interp/test_interp
+test_interp/test_interp_pol2cart
