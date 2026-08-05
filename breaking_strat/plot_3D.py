@@ -38,14 +38,20 @@ sys.path.append(filename)
 #     SliceExplorer2,
 # )
 #
-from visu3D2 import render_movie
+from visu_3Dmovie import render_movie, render_snapshot
 
 
 # files
 # myfile = "N512_nl30_0.000002_Tinizl/out.nc"
 myfile = "~/basilisk/wiki/sandbox/hugoj/breaking_strat/ml_breaking_strat.gpu/out.nc"
+snapfile = "~/work/BasiLagrangian/models/N1024/out954.nc"
 filemovie = "wave.mp4"
+ttime = 50.0
+snap = "wave"
+
+render_snapshot(myfile, snap, ttime, clim_side=(19.98, 20.0))
 render_movie(myfile, "wave")
+
 
 # todo:
 # - write a gif animation (I need to output more data first)

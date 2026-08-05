@@ -187,3 +187,6 @@ test_windinput/stokes.h
 
 test_interp/test_interp
 test_interp/test_interp_pol2cart
+
+*.mp4
+*.ppm
