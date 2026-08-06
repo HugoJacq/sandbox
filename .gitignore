@@ -159,7 +159,6 @@ benchmark_cpu_gpu/runJZ_gpu.slurm
 breaking_strat/ml_breaking_strat.cuda/
 lib/diffusionRheo.h
 lib/wind_forcing.h
-libpy/breaking.py
 test_hpc_workflow/
 test_windinput/counting_limiters/
 test_windinput/energy.py
@@ -190,3 +189,7 @@ test_interp/test_interp_pol2cart
 
 *.mp4
 *.ppm
+
+
+breaking_strat/bug_couches_T/
+libpy/idea_widget.md
