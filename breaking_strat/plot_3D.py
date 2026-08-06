@@ -10,7 +10,7 @@ Assumes your NetCDF has, e.g.:
     eta(time, y, x)         -- free-surface elevation (already in the file!)
     x(x), y(y)               -- horizontal coordinates (1D, regular or not)
 
-Adjust variable/dimension names below to match your file.
+Adjust variable/dimension names below to match the file.
 
 conda env is visu3D
 """
@@ -26,33 +26,39 @@ import sys
 dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, "../libpy/")
 sys.path.append(filename)
-# from tools import build_z_at_t
-# from tools_plots import (
-#     build_3Dgrid,
-#     vertex_coordinates,
-#     compute_interfaces,
-#     interfaces_to_vertices,
-#     add_mesh_domain_side,
-#     add_ticks,
-#     SliceExplorer,
-#     SliceExplorer2,
-# )
-#
-from visu_3Dmovie import render_movie, render_snapshot
+
+from visu_3Dmovie import render_movie
+from visu_3Dsnap import render_snapshot
 
 
 # files
 # myfile = "N512_nl30_0.000002_Tinizl/out.nc"
 myfile = "~/basilisk/wiki/sandbox/hugoj/breaking_strat/ml_breaking_strat.gpu/out.nc"
-snapfile = "~/work/BasiLagrangian/models/N1024/out954.nc"
+# snapfile = "~/work/BasiLagrangian/models/N1024/out954.nc"
 filemovie = "wave.mp4"
 ttime = 50.0
 snap = "wave"
 
-render_snapshot(myfile, snap, ttime, clim_side=(19.98, 20.0))
-render_movie(myfile, "wave")
 
+if True:
+    render_snapshot(
+        myfile,
+        "snapshot",
+        50.0,
+        var_side="T",
+        clim_side=(19.98, 20.0),
+        cmap_side="plasma",
+    )
+if False:
+    render_movie(
+        myfile,
+        "wave",
+        skip=1,
+        var_side="T",
+        clim_side=(19.98, 20.0),
+        cmap_side="plasma",
+        off_screen=True,
+    )
 
-# todo:
-# - write a gif animation (I need to output more data first)
-# - learn how to save a snapshot png
+# TODO:
+# slice widget
