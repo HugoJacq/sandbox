@@ -56,25 +56,25 @@ double spectrum_Gaussian(double G, double span, double kp, double kmod) {
 /** ## Inverse FFT 
  see the original version from Andrés [here](https://basilisk.fr/sandbox/acastillo/input_fields/initial_conditions_dimonte_fft2.h)
 */
- void fft2D(double *data, int n0, int n1){  
+void ifft2D(double *data, int NI, int NJ){  
   
   // Inverse FFT along rows 
-  for (int i = 0; i < n0; ++i){
-    gsl_fft_complex_radix2_backward(data + 2 * i * n1, 1, n1);
+  for (int i = 0; i < NI; ++i){
+    gsl_fft_complex_radix2_backward(data + 2 * i * NJ, 1, NJ);
   }
 
   // Inverse FFT along columns
-  double *column = malloc(2 * n0 * sizeof(double));
-  for (int j = 0; j < n1; ++j){
-    for (int i = 0; i < n0; ++i){
-      REAL(column,i) = REAL(data, i*n1 + j);
-      IMAG(column,i) = IMAG(data, i*n1 + j);
+  double *column = malloc(2 * NI * sizeof(double));
+  for (int j = 0; j < NJ; ++j){
+    for (int i = 0; i < NI; ++i){
+      REAL(column,i) = REAL(data, i*NJ + j);
+      IMAG(column,i) = IMAG(data, i*NJ + j);
     }
-    gsl_fft_complex_radix2_backward(column, 1, n0);
-    for (int i = 0; i < n0; ++i)
+    gsl_fft_complex_radix2_backward(column, 1, NI);
+    for (int i = 0; i < NI; ++i)
     {
-      REAL(data, i*n1 + j) = REAL(column,i);
-      IMAG(data, i*n1 + j) = IMAG(column,i);
+      REAL(data, i*NJ + j) = REAL(column,i);
+      IMAG(data, i*NJ + j) = IMAG(column,i);
     }
   }
   free(column);
