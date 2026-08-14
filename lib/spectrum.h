@@ -70,6 +70,7 @@ Note: g_ has to be defined before #include spectrum.h !
 
 typedef struct {
   int N_mode;
+  double thetam;
   double *kx;
   double *ky;
   double *F_kxky;
@@ -180,6 +181,7 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
         2 * pi / L + 1.0 * i / (N_kmod - 1) * (1.41 * 100 * 2 - 2) * pi / L;
     // fixme: what are these weird constants?? 1.41 * 100 * 2 - 2
   }
+  spectrum.thetam = thetam;
   // build Dtheta
   for (int i = 0; i < N_theta; ++i) {
     theta[i] = -pi + 2.0*pi*i / (N_theta - 1);
@@ -215,6 +217,8 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
     //spectrum.ky[i] = 2 * pi / L * (i - N_mode / 2);
     spectrum.ky[i] = -2*pi*N_mode/L + 2*pi/L*i;
   }
+  
+  
 
   // interp F_kmodtheta on kx,ky grid
   double rho, phi;
@@ -224,19 +228,10 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
       // first we get polar coords
       cart2pol(spectrum.kx[ix], spectrum.ky[iy], &rho, &phi);
 
-      // Log out-of-range coordinates to diagnose extrapolation
-      // if (rho < kmod[0] || rho > kmod[N_kmod-1])
-      //   fprintf(stderr, "rho out of range: %f (kmod: %f to %f)\n",
-      //           rho, kmod[0], kmod[N_kmod-1]);
-      // if (phi < theta[0] || phi > theta[N_theta-1])
-      //   fprintf(stderr, "phi out of range: %f (theta: %f to %f)\n",
-      //           phi, theta[0], theta[N_theta-1]);
-      
-
       // then interp at these coords
       spectrum.F_kxky[ix*Ntmode + iy] = 2*interp_lin(
         kmod, theta, N_kmod, N_theta, rho, phi, F_kmodtheta);
-
+      
       // we remove the negative kx values
       // this removes the tilted half plane 
       // Fixme: just not generate these ! faster :)
@@ -244,16 +239,15 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
       if (localkx < 0.){
         spectrum.F_kxky[ix*Ntmode + iy] = 0.; // and x2 the half plane
       }
-      //
       // we remove the center point too, not defined behavior
       if (ix==N_mode && iy==N_mode){
-        //fprintf(stderr, "i'm in ! ix=%d iy=%d\n", ix, iy);
         spectrum.F_kxky[ix*Ntmode + iy] = 0.;
       }
       // Uncomment this if F_kxky is < 0.
       // if (spectrum.F_kxky[ix*Ntmode + iy] < 0.){
       //   fprintf(stderr,"i=%d j=%d %f \n", ix,iy, spectrum.F_kxky[ix*Ntmode + iy]);
       // }
+      
     }
   }
 
@@ -264,11 +258,10 @@ T_Spectrum spectrum_gen_linear(int N_mode, int N_power, double L, double P,
   double k = 0;
   for (int i=0; i<Ntmode; i++) {
     for (int j=0; j<Ntmode; j++) {
-      //index = j*N_mode + i;
       index = i*Ntmode + j;
       k = sqrt(sq(spectrum.kx[i]) + sq(spectrum.ky[j]));
       spectrum.omega[index] = sqrt(g_*k); // we use linear dispersion relation 
-      spectrum.phase[index] = randInRange (0, 2.*pi); // random phase in [0,2pi]
+      spectrum.phase[index] = randInRange (0, 2.*pi); // random phase in [0,2pi)
     }
   }
   return spectrum;
@@ -404,10 +397,187 @@ with $a_{ij} = \sqrt{2F(k_{x,i},k_{y,j})dk_x dk_y}$
 Strictly speaking we look for a solution that is the sum of linear modes, no
 need for the  hypothesis of linear theory)
 */
+
+void transpose_NxN_inplace(double *A, int N)
+{
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+
+            double tmp = A[j*N + i];
+            A[j*N + i] = A[i*N + j];
+            A[i*N + j] = tmp;
+        }
+    }
+}
+
+/** ## Inverse FFT 
+ see the original version from Andrés [here](https://basilisk.fr/sandbox/acastillo/input_fields/initial_conditions_dimonte_fft2.h)
+*/
+void ifft2D(double *data, int NI, int NJ){  
+  
+  // Inverse FFT along rows 
+  for (int i = 0; i < NI; ++i){
+    gsl_fft_complex_radix2_backward(data + 2 * i * NJ, 1, NJ);
+  }
+
+  // Inverse FFT along columns
+  double *column = malloc(2 * NI * sizeof(double));
+  for (int j = 0; j < NJ; ++j){
+    for (int i = 0; i < NI; ++i){
+      REAL(column,i) = REAL(data, i*NJ + j);
+      IMAG(column,i) = IMAG(data, i*NJ + j);
+    }
+    gsl_fft_complex_radix2_backward(column, 1, NI);
+    for (int i = 0; i < NI; ++i)
+    {
+      REAL(data, i*NJ + j) = REAL(column,i);
+      IMAG(data, i*NJ + j) = IMAG(column,i);
+    }
+  }
+  free(column);
+}
+
+/**
+ This function scatter T_Spectrum onto an FFT-ordered, zero-padded N*N grid
+ ready to be used with ifft2D
+ */
+trace
+static void eta_spectrum_scatter (double *data, T_Spectrum spec, int N)
+{
+  int N_mode = spec.N_mode;
+  int Ntmode = 2*N_mode + 1;
+  double dkx = spec.kx[1] - spec.kx[0];
+  double dky = spec.ky[1] - spec.ky[0];
+
+  memset(data, 0, 2*N*N*sizeof(double));
+
+
+  /**
+  GSL FFT ordering is not the usual spectral space.
+  We need to go from a space centered on (i,j)=(Nmode/2,Nmode/2)
+  to a space centered on (bi,bj)=(0,0)
+
+  example for N_mode = 2
+  
+  index F_kxky space from 'spec'
+  |----|----|----|----|----|----|
+            0    1    2
+
+  index GSL space
+  |----|----|----|----|----|----|
+  0    1    2    3    4    5    6
+  
+  shift is done like this:
+  if i>N_mode, bi = i
+  else bi = N-i
+
+  (and expand to 2D)
+   */
+  for (int i = 0; i < Ntmode; i++) {
+    int m  = i - N_mode;
+    int bi = (m >= 0) ? m : N + m;
+    for (int j = 0; j < Ntmode; j++) {
+      int n  = j - N_mode;
+      int bj = (n >= 0) ? n : N + n;
+      int index = i*Ntmode + j;
+      double ampl = sqrt(2*spec.F_kxky[index]*dkx*dky);
+      int o = bi*N + bj;
+    
+      REAL(data, o) = ampl*cos(spec.phase[index]);
+      IMAG(data, o) = ampl*sin(spec.phase[index]);
+      // Note: Ermitian symmetry is not enforced, so var = var(real) + var(imag)
+    }
+  }
+
+}
+
+scalar Fkxky;
+scalar Fkxky_gsl;
+//  spectrum -> FFT grid -> Basilisk scalar field 
+trace
+void initial_condition_wave_fft (scalar eta, T_Spectrum spec, int N)
+{
+  double dx = L0/N;
+  double *zdata = malloc(N*N*sizeof(double));
+  Fkxky = new scalar[1];
+  Fkxky_gsl = new scalar[1];
+    if (pid() == 0) {
+    double *data = malloc(2*N*N*sizeof(double));
+    eta_spectrum_scatter(data, spec, N);
+    
+    #if CHECK_PARSEVAL
+    // Verify Parseval's theorem: 
+    // 0) Compute target variance
+    int Ntmode = 2*spec.N_mode +1;
+    double dkx = spec.kx[1]-spec.kx[0];
+    double dky = spec.ky[1]-spec.ky[0];
+    double variance_target = 0.;
+    for (int i=0;i<Ntmode*Ntmode; ++i){
+      variance_target += spec.F_kxky[i]*dkx*dky;
+    }
+    // 1) compute variance in spectral space
+    double variance_spectral = 0.;  
+    for (int i = 0; i < N*N; ++i){
+      variance_spectral += sq(REAL(data, i)) + sq(IMAG(data, i));
+    }
+    
+    // Note: I do not enforce Hermitian symmetry in 'eta_spectrum_scatter'
+    // because my spectrum is tilted (I would need to impose F(-k) = F(k)*)
+    // As my modes are independant, I get the energy split between
+    // real and imaginary part EXACTLY. So here I divid by 2 the variance computed from the 
+    // complex spectrum.
+    variance_spectral /= 2.0;
+    #endif // CHECK_PARSEVAL
+
+    /** spectral space -> physical space, change 'data' in place */
+    ifft2D(data, N, N);
+    for (int n = 0; n < N*N; n++)
+      zdata[n] = REAL(data, n);
+
+    #if CHECK_PARSEVAL
+    // 2) compute variance in real space
+    double mean_real = 0.;
+    for (int i = 0; i < N * N; i++){
+      mean_real += zdata[i];
+    }
+    mean_real /= 1.0*N*N;
+    double variance_real = 0.;
+    for (int i = 0; i < N * N; i++){
+      variance_real += sq(zdata[i] - mean_real);
+    }
+    variance_real /= 1.0*N*N;
+    fprintf(stdout, "wave: Spectral target variance (Fkxky): %f \n", variance_target);
+    fprintf(stdout, "wave: Spectral variance (Parseval): %f \n", variance_spectral);
+    fprintf(stdout, "wave: Real space variance (after IFFT): %f\n", variance_real);
+    fprintf(stdout, "wave: Parseval check: spectral vs real space energy ratio = %f\n", 
+            variance_real / variance_spectral);
+    #endif // CHECK_PARSEVAL
+    
+    free(data);
+  }
+  
+  
+  #if _MPI
+  // Broadcast to other mpi processes
+  MPI_Bcast(zdata, N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  #endif // _MPI
+  
+  // Assign to eta
+  foreach(cpu) {
+    int i = (int)floor((x - X0)/dx)+1;
+    int j = (int)floor((y - Y0)/dx)+1;
+    i = (i % N + N) % N ;
+    j = (j % N + N) % N ;
+    eta[] = zdata[i*N + j];
+    // Fixme: there is still a X,Y shift when compared to wave_v1
+  }
+
+  free(zdata);
+}
 trace
 double wave_v1 (double x, double y, T_Spectrum spec)
 {
-  // Legacy function, use 'wave'
+  // Legacy function, use 'initial_condition_wave_fft'
   double eta = 0.;
   double dkx = spec.kx[1] - spec.kx[0];
   double dky = spec.ky[1] - spec.ky[0];
@@ -439,6 +609,14 @@ with $\beta_{ij} = arctan2(k_{y,i}/k_{x,i})$ defined in $[-\pi,\pi)$, $g$ the gr
 $k=\sqrt{k_{x,i}^2+k_{y,j}^2}$ and $\phi_{rand}$ and random phase in $[-\pi,\pi)$.
 
 */
+
+
+
+
+
+
+
+
 
 
 // Velocities following the linear wave theory
@@ -479,94 +657,7 @@ coord wave_u_v1 (double x, double y, double z, T_Spectrum spec)
 // - generate currents on a cartesian grid using iFFT (check Parceval !)
 // - interpolate on a layered grid
 
-/** ## Inverse FFT 
- see the original version from Andrés [here](https://basilisk.fr/sandbox/acastillo/input_fields/initial_conditions_dimonte_fft2.h)
-*/
-void ifft2D(double *data, int NI, int NJ){  
-  
-  // Inverse FFT along rows 
-  for (int i = 0; i < NI; ++i){
-    gsl_fft_complex_radix2_backward(data + 2 * i * NJ, 1, NJ);
-  }
 
-  // Inverse FFT along columns
-  double *column = malloc(2 * NI * sizeof(double));
-  for (int j = 0; j < NJ; ++j){
-    for (int i = 0; i < NI; ++i){
-      REAL(column,i) = REAL(data, i*NJ + j);
-      IMAG(column,i) = IMAG(data, i*NJ + j);
-    }
-    gsl_fft_complex_radix2_backward(column, 1, NI);
-    for (int i = 0; i < NI; ++i)
-    {
-      REAL(data, i*NJ + j) = REAL(column,i);
-      IMAG(data, i*NJ + j) = IMAG(column,i);
-    }
-  }
-  free(column);
-}
-
-// --- scatter T_Spectrum onto an FFT-ordered, zero-padded Nx*Nx grid ---
-trace
-static void eta_spectrum_scatter (double *data, T_Spectrum spec, int Nx)
-{
-  int N_mode = spec.N_mode;
-  int Ntmode = 2*N_mode + 1;
-  double dkx = spec.kx[1] - spec.kx[0];
-  double dky = spec.ky[1] - spec.ky[0];
-
-  memset(data, 0, 2*Nx*Nx*sizeof(double));
-
-  for (int i = 0; i < Ntmode; i++) {
-    int m  = i - N_mode;
-    int bi = (m >= 0) ? m : Nx + m;
-    for (int j = 0; j < Ntmode; j++) {
-      int n  = j - N_mode;
-      int bj = (n >= 0) ? n : Nx + n;
-      int index = i*Ntmode + j;
-
-      double ampl = sqrt(2.*spec.F_kxky[index]*dkx*dky);
-      int o = bi*Nx + bj;
-      REAL(data, o) = ampl*cos(spec.phase[index]);
-      IMAG(data, o) = ampl*sin(spec.phase[index]);
-    }
-  }
-}
-
-// --- full driver: spectrum -> FFT grid -> Basilisk scalar field ---
-trace
-void initial_condition_wave_fft (scalar eta_field, T_Spectrum spec, int Nx)
-{
-  double dx = L0/Nx;
-  double *zdata = malloc(Nx*Nx*sizeof(double));
-
-  if (pid() == 0) {
-    double *data = malloc(2*Nx*Nx*sizeof(double));
-    eta_spectrum_scatter(data, spec, Nx);
-    ifft2D(data, Nx, Nx);
-
-    double norm = 1.0/((double)Nx*Nx);   // two unnormalized radix2_backward passes
-    for (int n = 0; n < Nx*Nx; n++)
-      zdata[n] = REAL(data, n)*norm;
-
-    free(data);
-  }
-
-  @ if _MPI
-    MPI_Bcast(zdata, Nx*Nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  @endif
-
-  foreach() {
-    int i = (int)round((x - X0)/dx);
-    int j = (int)round((y - Y0)/dx);
-    // periodic wrap in case of roundoff pushing i,j out of [0,Nx)
-    i = (i % Nx + Nx) % Nx;
-    j = (j % Nx + Nx) % Nx;
-    eta_field[] = zdata[i*Nx + j];
-  }
-
-  free(zdata);
-}
 
 // trace
 // double wave (double x, double y, T_Spectrum spec)
