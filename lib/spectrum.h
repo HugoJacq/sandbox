@@ -381,7 +381,6 @@ T_Spectrum read_spectrum(int N_mode) {
 }
 
 
-
 /**
 
 ## Surface elevation
@@ -449,8 +448,7 @@ static void eta_spectrum_scatter (double *data, T_Spectrum spec, int N)
   double dkx = spec.kx[1] - spec.kx[0];
   double dky = spec.ky[1] - spec.ky[0];
 
-  memset(data, 0, 2*N*N*sizeof(double));
-
+  
 
   /**
   GSL FFT ordering is not the usual spectral space.
@@ -491,18 +489,16 @@ static void eta_spectrum_scatter (double *data, T_Spectrum spec, int N)
 
 }
 
-scalar Fkxky;
-scalar Fkxky_gsl;
 //  spectrum -> FFT grid -> Basilisk scalar field 
 trace
 void initial_condition_wave_fft (scalar eta, T_Spectrum spec, int N)
 {
-  double dx = L0/N;
+  
   double *zdata = malloc(N*N*sizeof(double));
-  Fkxky = new scalar[1];
-  Fkxky_gsl = new scalar[1];
     if (pid() == 0) {
     double *data = malloc(2*N*N*sizeof(double));
+    memset(data, 0, 2*N*N*sizeof(double));
+
     eta_spectrum_scatter(data, spec, N);
     
     #if CHECK_PARSEVAL
@@ -556,24 +552,29 @@ void initial_condition_wave_fft (scalar eta, T_Spectrum spec, int N)
     free(data);
   }
   
-  
   #if _MPI
   // Broadcast to other mpi processes
   MPI_Bcast(zdata, N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   #endif // _MPI
-  
+
+  double dx = L0/N;
+  double dy = dx;
   // Assign to eta
   foreach(cpu) {
-    int i = (int)floor((x - X0)/dx)+1;
-    int j = (int)floor((y - Y0)/dx)+1;
+    int i = (int)floor(x/dx);
+    int j = (int)floor(y/dy);
     i = (i % N + N) % N ;
     j = (j % N + N) % N ;
     eta[] = zdata[i*N + j];
-    // Fixme: there is still a X,Y shift when compared to wave_v1
+    // Fixme: there is still a X,Y shift of 1/2 cells when compared to wave_v1
+    // I think this is because my spectrum is at every dx starting 0. but the Basilisk
+    // grid is every dx starting at dx...
   }
 
   free(zdata);
 }
+
+
 trace
 double wave_v1 (double x, double y, T_Spectrum spec)
 {
@@ -611,9 +612,192 @@ $k=\sqrt{k_{x,i}^2+k_{y,j}^2}$ and $\phi_{rand}$ and random phase in $[-\pi,\pi)
 */
 
 
+/** Tools functions and struct */
+typedef struct {
+  int N, Nz;
+  double *z;      // [Nz], physical z of each plane
+  double *Ux, *Uy, *Uz;  // [Nz*N*N] each
+} T_UStack;
+
+void ustack_alloc(T_UStack *S, int N, int Nz)
+{
+  S->N = N;
+  S->Nz = Nz;
+  S->z  = malloc(Nz*sizeof(double));
+  S->Ux = malloc(Nz*N*N*sizeof(double));
+  S->Uy = malloc(Nz*N*N*sizeof(double));
+  S->Uz = malloc(Nz*N*N*sizeof(double));
+}
+
+void ustack_free (T_UStack *S)
+{
+  free(S->z); 
+  free(S->Ux); 
+  free(S->Uy); 
+  free(S->Uz); 
+
+  S->z = NULL;
+  S->Ux = NULL;
+  S->Uy = NULL;
+  S->Uz = NULL;
+}
+
+/**
+Vertical interpolation at 2D index 'p' and altitude 'zq'.
+Input data is 'field' of size Nz*N*N, 'zlev' of size Nz
+ */
+double column_interp (const double *field, int Nz, int N, int p,
+                                const double *zlev, double zq)
+{
+  if (zq <= zlev[0])       
+    return field[0*N*N + p];
+  if (zq >= zlev[Nz - 1])  
+    return field[(Nz - 1)*N*N + p];
+
+  int k_below, k_above;
+  find_ibounds(zlev, Nz, zq, &k_below, &k_above);
+
+  double z0 = zlev[k_below],       z1 = zlev[k_above];
+  double v0 = field[k_below*N*N + p], v1 = field[k_above*N*N + p];
+
+  double t = (zq - z0)/(z1 - z0);
+  return v0 + t*(v1 - v0);
+}
+
+/** This function is similar to 'eta_spectrum_scatter': 
+  it makes the original F_kxky array (Ntmode**2 with Ntmode=2*N_mode+1)
+  in the right shape and indexing for use with ifft2D 
+  */
+trace
+static void u_spectrum_scatter (double *datau, 
+                                double *datav, 
+                                double *dataw, 
+                                double z, 
+                                T_Spectrum spec, 
+                                int N)
+{
+  int N_mode = spec.N_mode;
+  int Ntmode = 2*N_mode + 1;
+  double dkx = spec.kx[1] - spec.kx[0];
+  double dky = spec.ky[1] - spec.ky[0];
+  
+  for (int i = 0; i < Ntmode; i++) {
+    int m  = i - N_mode;
+    int bi = (m >= 0) ? m : N + m;
+    for (int j = 0; j < Ntmode; j++) {
+      int n  = j - N_mode;
+      int bj = (n >= 0) ? n : N + n;
+      int index = i*Ntmode + j;
+      int o = bi*N + bj;
+
+      double kmod = sqrt(sq(spec.kx[i]) + sq(spec.ky[j]));
+      double kmod_safe = (kmod > 0.) ? kmod : 1.;   // never zero, safe in all SIMD lanes (HPC optimisation)
+      if (kmod > 0.) {
+        double ampl = sqrt(2*spec.F_kxky[index]*dkx*dky); 
+        // We check that z is in the water. If outside, we set the current to it's surface value
+        double z_actual = (z < ampl ? (z) : ampl);
+        double uampl = sqrt(g_*kmod_safe)*ampl*exp(kmod_safe*z_actual);
+        double cosa = cos(spec.phase[index]);
+        double sina = sin(spec.phase[index]);
 
 
+        REAL(datau, o) = uampl*spec.kx[i]/kmod_safe*cosa;
+        IMAG(datau, o) = uampl*spec.kx[i]/kmod_safe*sina;
 
+        REAL(datav, o) = uampl*spec.ky[j]/kmod_safe*cosa;
+        IMAG(datav, o) = uampl*spec.ky[j]/kmod_safe*sina;
+
+        REAL(dataw, o) = uampl*cosa;
+        IMAG(dataw, o) = uampl*sina;
+
+      }
+    }
+  }
+}
+
+/** This function builds a 3D cartesian grid with currents. 
+   This is usefull because we can then use ifft2D on z planes, then interp on layers*/
+trace
+T_UStack ustack_build (T_Spectrum spec, int N, double zmin, double zmax, int Nz)
+{
+  T_UStack S;
+  ustack_alloc(&S, N, Nz);
+
+  if (pid() == 0) {
+
+    double dz = (zmax-zmin)/((double)Nz-1);
+    for (int l = 0; l < Nz; l++) {
+      S.z[l] = zmin + l*dz;
+    }
+
+    double *datau = malloc(2*N*N*sizeof(double));
+    double *datav = malloc(2*N*N*sizeof(double));
+    double *dataw = malloc(2*N*N*sizeof(double));
+
+    for (int l = 0; l < Nz; l++) {
+      memset(datau, 0, 2*N*N*sizeof(double));
+      memset(datav, 0, 2*N*N*sizeof(double));
+      memset(dataw, 0, 2*N*N*sizeof(double));
+
+      u_spectrum_scatter(datau, datav, dataw, S.z[l], spec, N);
+      ifft2D(datau, N, N);
+      ifft2D(datav, N, N);
+      ifft2D(dataw, N, N);
+
+      for (int n = 0; n < N*N; n++) {
+        S.Ux[l*N*N + n] = REAL(datau, n);
+        S.Uy[l*N*N + n] = REAL(datav, n);
+        S.Uz[l*N*N + n] = IMAG(dataw, n);
+      }
+    }
+    free(datau); free(datav); free(dataw);
+  }
+
+  #if _MPI
+    MPI_Bcast(S->Ux, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(S->Uy, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(S->Uz, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  #endif
+
+  return S;
+}
+
+
+/**  main driver : scatter spectrum on iFFT grid -> interp columns -> Basilisk scalar field */
+trace
+void initial_condition_u_fft (vector u, 
+                              T_Spectrum spec, 
+                              double zmin, 
+                              double zmax, 
+                              int N, 
+                              int Nz=10)
+{
+  // Generate currents on 3D cartesian grid
+  T_UStack S;
+  S = ustack_build (spec, N, zmin, zmax, Nz);
+
+  double dx = L0/N;
+  double dy = dx;
+  
+  foreach() {
+    int i = (int)floor(x/dx)+1;
+    int j = (int)floor(y/dy)+1;
+    i = (i % N + N) % N; // X cyclic
+    j = (j % N + N) % N; // Y cyclic
+
+    // p is the position in the flattened array (N*N) of (i,j) in the 2D array (N,N)
+    int p = i*N + j; 
+    double z = zb[];
+    foreach_layer() {
+      z += h[]/2;
+      u.x[] = column_interp(S.Ux, Nz, N, p, S.z, z);  
+      u.y[] = column_interp(S.Uy, Nz, N, p, S.z, z); 
+      w[] =  column_interp(S.Uz, Nz, N, p, S.z, z);
+      z += h[]/2;
+    }
+  }
+  ustack_free(&S);
+}
 
 
 
@@ -652,6 +836,65 @@ coord wave_u_v1 (double x, double y, double z, T_Spectrum spec)
   
   return u;
 }
+
+// trace
+// void initial_condition_u_fft (vector u, T_Spectrum spec, int N)
+// {
+//
+//   // LOOP ON Z
+//
+//   double dx = L0/N;
+//   double *zdata = malloc(N*N*sizeof(double));
+//   if (pid() == 0) {
+//     double *datau = malloc(2*N*N*sizeof(double));
+//     memset(datau, 0, 2*N*N*sizeof(double));
+//     double *datav = malloc(2*N*N*sizeof(double));
+//     memset(datav, 0, 2*N*N*sizeof(double));
+//     double *dataw = malloc(2*N*N*sizeof(double));
+//     memset(dataw, 0, 2*N*N*sizeof(double));
+//
+//     u_spectrum_scatter(datau, datav, dataw, z, spec, N);
+//
+//     /** spectral space -> physical space, change 'data' in place */
+//     ifft2D(datau, N, N);
+//     ifft2D(datav, N, N);
+//     ifft2D(dataw, N, N);
+//
+//     for (int n = 0; n < N*N; n++)
+//       zdata[n] = REAL(datau, n);
+//       // zdata[n] = REAL(datav, n);
+//       // zdata[n] = IMAG(dataw, n);
+//
+//     free(data);
+//   }
+//
+//
+//   #if _MPI
+//   // Broadcast to other mpi processes
+//   MPI_Bcast(zdata, N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//   #endif // _MPI
+//
+//   // INTERPOLATION ON LAYERS
+//
+//
+//
+//   // Assign to eta
+//   foreach(cpu) {
+//     int i = (int)floor((x - X0)/dx)+1;
+//     int j = (int)floor((y - Y0)/dx)+1;
+//     i = (i % N + N) % N ;
+//     j = (j % N + N) % N ;
+//     eta[] = zdata[i*N + j];
+//   }
+//
+//   free(zdata);
+// }
+
+
+
+
+
+
 
 // Plan for new version of ini:
 // - generate currents on a cartesian grid using iFFT (check Parceval !)
