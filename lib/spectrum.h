@@ -754,9 +754,9 @@ T_UStack ustack_build (T_Spectrum spec, int N, double zmin, double zmax, int Nz)
   }
 
   #if _MPI
-    MPI_Bcast(S->Ux, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(S->Uy, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(S->Uz, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(S.Ux, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(S.Uy, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(S.Uz, Nz*N*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   #endif
 
   return S;
@@ -779,7 +779,7 @@ void initial_condition_u_fft (vector u,
   double dx = L0/N;
   double dy = dx;
   
-  foreach() {
+  foreach(cpu) {
     int i = (int)floor(x/dx)+1;
     int j = (int)floor(y/dy)+1;
     i = (i % N + N) % N; // X cyclic
