@@ -197,3 +197,9 @@ libpy/idea_widget.md
 
 test_spectrum.h_speed/qcc
 test_spectrum.h_speed/speed_wave_ini/
+
+test_windinput/test_forcing_HR/linear_wave_wind_input/
+test_windinput/test_forcing_HR/no_forcing.c
+test_windinput/test_forcing_HR/no_forcing/
+test_windinput/test_real_field/PM_seastate.cuda/
+test_windinput/test_real_field/PM_seastate/
