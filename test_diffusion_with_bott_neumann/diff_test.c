@@ -6,6 +6,11 @@ This 1D case is an example on how to set boundary condition for a scalar T.
 Temperature is initialized as an affine function of $z$, at the surface a (heat) flux is
 imposed and at the bottom we impose a that the initial gradient is conserved at
 all $t$.
+
+If using  this with a machine with 2 gpus, make sure to select the right one.
+For my nvidia gpu, I do
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia make
+
 */
 #include "grid/multigrid.h"
 #include "layered/hydro.h"
@@ -166,7 +171,9 @@ event log (i++){
   write_nc();
 }
 
-event stop (t = tend);
+event stop (t = tend){
+  free(Temp);
+}
 
 
 /**
