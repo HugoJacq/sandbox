@@ -78,11 +78,13 @@ int main(int argc, char *argv[])
   fluxtop = 0.;
 #endif // NEUMANN0
 
-  #if dimension==2
+#if NOT_PERIODIC
+#else
+#if dimension==2
     periodic (top);
-  #endif
+ #endif
   periodic (left);
-
+#endif // NOT_PERIODIC
   run();
 }
 
@@ -322,8 +324,51 @@ ax.set_xlim([19.999,20.001])
 #ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
 plt.tight_layout()
 plt.savefig("T_profiles_T_cst_cuda.png", dpi=150)
-plt.show()
 ~~~
 
+## ----------------------
+## NEUMANN0, T_CST, NOT_PERIODIC
+
+~~~pythonplot Profile of T, with Neumann boundary conditions and constant initial temperature (cuda)
+data = np.loadtxt("../T_cst_notperiodic/T_profile.dat")
+nl=30
+nt = data.shape[0]//nl
+fig, ax = plt.subplots(figsize=(8, 6))
+cmap = plt.get_cmap("viridis", nt)
+for t in range(nt):
+    layer=data[t*nl:(t+1)*nl,2]
+    T = data[t*nl:(t+1)*nl,3]
+    ax.plot(T,layer,color=cmap(t), marker="+", linestyle="-")
+ax.set_xlabel("T")
+ax.set_ylabel("Layer")
+ax.set_title("Temperature profiles (T=cst, dT/dz=0 bot and top, notperiodic)")
+ax.set_xlim([19.999,20.001])
+#ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+plt.tight_layout()
+plt.savefig("T_profiles_T_cst_not_periodic.png", dpi=150)
+~~~
+
+## ----------------------
+## NEUMANN0, T_CST, NOT_PERIODIC, CUDA
+
+~~~pythonplot Profile of T, with Neumann boundary conditions and constant initial temperature (cuda)
+data = np.loadtxt("../T_cst_notperiodic.cuda/T_profile.dat")
+nl=30
+nt = data.shape[0]//nl
+fig, ax = plt.subplots(figsize=(8, 6))
+cmap = plt.get_cmap("viridis", nt)
+for t in range(nt):
+    layer=data[t*nl:(t+1)*nl,2]
+    T = data[t*nl:(t+1)*nl,3]
+    ax.plot(T,layer,color=cmap(t), marker="+", linestyle="-")
+ax.set_xlabel("T")
+ax.set_ylabel("Layer")
+ax.set_title("Temperature profiles (T=cst, dT/dz=0 bot and top, notperiodic,cuda)")
+ax.set_xlim([19.999,20.001])
+#ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+plt.tight_layout()
+plt.savefig("T_profiles_T_cst_not_periodic_cuda.png", dpi=150)
+plt.show()
+~~~
 
 */
