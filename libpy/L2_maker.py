@@ -134,11 +134,6 @@ def make_L2_layer(
         else:
             print("saving skipped !")
     else:
-        # dsL2 = xr.open_dataset(
-        #     outpath + outfile,
-        #     chunks={"x": ds.chunks["x"], "y": ds.chunks["y"]},
-        #     consolidated=True,
-        # )
         dsL2 = xr.open_zarr(
             outpath + outfile,
             chunks={"x": ds.chunks["x"], "y": ds.chunks["y"]},
