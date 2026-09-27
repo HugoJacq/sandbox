@@ -23,8 +23,6 @@ def E_linwave(E0, nu, ak, k, t):
 
 
 data = {
-    "noremap": np.loadtxt("out_noremap", skiprows=1),
-    "remap": np.loadtxt("out_remap", skiprows=1),
     "current_noforcing": np.loadtxt("no_forcing/out", skiprows=1),
     "current_exactforced": np.loadtxt("exact_forcing/out", skiprows=1),
     "current_forced": np.loadtxt("linear_wave_wind_input/out", skiprows=1),
@@ -77,8 +75,6 @@ fig, ax = plt.subplots(figsize=(7, 6))
 #     label="2Ek (current_noforcing)",
 #     alpha=0.5,
 # )
-# ax.semilogy(time["remap"], E["remap"] / E0, color="k", label="E (remap)")
-# ax.semilogy(time["noremap"], E["noremap"] / E0, color="orange", label="E (noremap)")
 ax.hlines(E0th, 0, 100, colors="gray", alpha=0.7)
 ax.semilogy(
     time["current_noforcing"],
@@ -101,12 +97,8 @@ ax.semilogy(
     ls="--",
 )
 ax.semilogy(time["remap"], Eth / E0, color="r", label=r"$E(t)=E_0 e^{-4 \nu k^2 t}$")
-# ax.plot(time, 2 * ke / E0, color="b", label="2*ke")
-# ax.plot(time, 2 * gpe / E0, color="g", label="2*gpe")
 ax.set_xlabel("t/T0")
 ax.set_ylabel("E/E0")
-# ax.set_xlim([0,NT0])
-# ax.set_ylim([0.5, 2])
 ax.set_xlim([0, 10])
 ax.set_ylim([1.16e-6, 1.28e-6])
 ax.legend()
