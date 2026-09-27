@@ -14,36 +14,48 @@ decay is $E(t)=E_0 e^{-4\nu k^2 t}$ (Lamb 1932)
 
 We use the following principle: a wind pressure is applied on positive slopes
 (in the x direction) with the norm
-
-\[ p_s(t,x,y) = \frac{p_0(t)}{\rho} \frac{\partial \eta}{\partial x} \]
-
+$$
+\begin{aligned}
+p_s(t,x,y) = \frac{p_0(t)}{\rho} \frac{\partial \eta}{\partial x}
+\end{aligned}
+$$
 This pressure is added to the barotropic pressure from the deformation of the
 surface (much like in the vein of the [hydro-tension](https://basilisk.fr/src/layered/hydro-tension.h) code).
 The 'a_baro' macro is overloaded.
 
-The amplitude $p0$ can be set to a constant (growing sea) or maintained at a
+The amplitude $p_0$ can be set to a constant (growing sea) or maintained at a
 specific energy level.
 
 The energy input from this forcing in the multilayer simulation is
-
-\[ \frac{\partial E_{in}}{\partial t} = \int_x \int_x u \cdot a_p dx dz \]
-
+$$
+\begin{aligned}
+\frac{\partial E_{in}}{\partial t} = \int_x \int_x u \cdot a_p dx dz
+\end{aligned}
+$$
 where $a_p$ is the barotropic acceleration 
-
-\[ a_p = \frac{\partial p_s}{\partial x} = \frac{p0}{\rho} \frac{\partial^2 \eta}{\partial x^2} \]
+$$
+\begin{aligned}
+a_p = \frac{\partial p_s}{\partial x} = \frac{p0}{\rho} \frac{\partial^2 \eta}{\partial x^2} 
+\end{aligned}
+$$
 
 In the multilayer, $dz=h$. The discretised energy input is (here in 1D):
-
-\[ \frac{\partial E_{in}}{\partial t} = \frac{p0}{\rho}\sum_i^N ( \sum_{k}^{nl} h_k u.x_k)
-\frac{1}{\Delta^2} (eta_[i+1} + eta[i-1] - 2 eta[i]) \frac{L}{N}  \]
+$$
+\begin{aligned}
+\frac{\partial E_{in}}{\partial t} = \frac{p0}{\rho}\sum_i^N ( \sum_{k}^{nl} h_k u.x_k) \frac{1}{\Delta^2} (eta_[i+1} + eta[i-1] - 2 eta[i]) \frac{L}{N}
+\end{aligned}
+$$
 
 This formulation was first used in the multilayer context by Rui Yang (Princeton).
 
 ## 3. Exact forcing of to counter viscous dissipation
 
 For a viscous dissipation $\nu$, the pressure $p0$ of the forcing is
-\[ p0 = 4 \rho \nu k c \]
-
+$$
+\begin{aligned}
+ p_0= 4 \rho \nu k c
+\end{aligned}
+$$
 ## 4. Dynamic forcing to reach a target energy
 
 Let's say we want to maintain a quasi-stationnary sea state. We can do this
@@ -52,30 +64,37 @@ timestep, dissipation occurs (viscous, breaking or implicit) so energy must be
 injected into the domain. We can compute an energy deficit $\Delta E$ like the
 following
 
-\[ \Delta E = \rho g ( \overline{\eta^2}_{target} - \overline{\eta^2}(t)) \]
-
+$$
+\begin{aligned}
+\Delta E = \rho g ( \overline{\eta^2}_{target} - \overline{\eta^2}(t))
+\end{aligned}
+$$
 We relax the forcing on a $\Delta t$ timescale (chosen by the user, typically a
 few period of the main wave). The pressure amplitude $p_0$ can then be inferred
 by equating the energy deficit over the timescale $\Delta t$ and the energy
 input by the present forcing
 
-\[ \frac{\partial E_{in}}{\partial t} = \frac{\Delta E }{\Delta t } \]
-
+$$
+\begin{aligned}
+\frac{\partial E_{in}}{\partial t} = \frac{\Delta E }{\Delta t } \]
+\end{aligned}
+$$
 Rearranging terms gives the amplitude for the current timestep
+$$
+\begin{aligned}
+ p0 = \frac{-\rho g}{\Delta t}( \overline{\eta^2}_{target} - \overline{\eta^2}(t))
+        / \sum_N (Q \frac{\partial^2 \eta}{\partial x^2})
+\end{aligned}
+$$
 
-\[ p0 = \frac{-\rho g}{\Delta t}( \overline{\eta^2}_{target} - \overline{\eta^2}(t))
-        / \sum_N (Q \frac{\partial^2 \eta}{\partial x^2}) \]
-
-with $Q= \sum_{k}^{nl} h_k u.x_k$ the integrated transport.
+with $Q= \sum_{k}^{nl} h_k u_k$ the integrated transport.
 
 ## References
 
 Horace Lamb, Hydrodynamics (6th ed., 1932), Chapter XI, Article 348, "Effect of
-Viscosity on Water-Waves," pp. 623–625
+Viscosity on Water-Waves," pp. 623–625, see also article 349 
 
 Ref Rui Yang
-
-et Article 349 pour une dérivation plus sérieuse
 
 ## TODO
 
