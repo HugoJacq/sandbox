@@ -300,4 +300,11 @@ breaking_strat/tmp/
 Hay_2023/europa-ocean.cuda/
 Hay_2023/europa-ocean/
 
+bug_T_loss/T_cst_nowave.cuda/
+bug_T_loss/T_cst_nowave/
+bug_T_loss/T_cst_withwave.cuda/
+bug_T_loss/ml_breaking_strat.cuda/
+multilayer_stratified/ml_convection.cuda/
+test_diffusion_with_bott_neumann/simple.cuda/
+
 
