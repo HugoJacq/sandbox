@@ -766,7 +766,8 @@ void initial_condition_u_fft (vector u,
                               T_Spectrum spec, 
                               double zmin, 
                               double zmax, 
-                              int N, 
+                              int N,
+                              double h0,
                               int Nz=10)
 {
   // Generate currents on 3D cartesian grid
@@ -786,11 +787,13 @@ void initial_condition_u_fft (vector u,
     int p = i*N + j; 
     double z = zb[];
     foreach_layer() {
-      z += h[]/2;
+      //z += h[]/2;
+      z += h0*beta[point.l]/2;
       u.x[] = column_interp(S.Ux, Nz, N, p, S.z, z);  
       u.y[] = column_interp(S.Uy, Nz, N, p, S.z, z); 
       w[] =  column_interp(S.Uz, Nz, N, p, S.z, z);
-      z += h[]/2;
+      z += h0*beta[point.l]/2;
+      //z += h[]/2;
     }
   }
   ustack_free(&S);
