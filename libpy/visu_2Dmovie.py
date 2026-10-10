@@ -171,7 +171,7 @@ def render_movie2D(
         datavar -= datavarm
 
         print(f"  frame {it}/{nframes} ({pct:.0f}%)", end="\r", flush=True)
-        fig, ax = plt.subplots(figsize=(6, 5), constrained_layout=True, dpi=100)
+        fig, ax = plt.subplots(figsize=(6, 5), constrained_layout=True, dpi=200)
         s = ax.pcolormesh(
             ds.x,
             ds.y,
