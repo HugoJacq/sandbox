@@ -307,4 +307,7 @@ bug_T_loss/ml_breaking_strat.cuda/
 multilayer_stratified/ml_convection.cuda/
 test_diffusion_with_bott_neumann/simple.cuda/
 
-
+breaking_strat/N512_40_RE40000_TiniZl_remap1.0_cuda_smooth/
+test_windinput/test_forcing/stokes/
+test_windinput/test_real_field/PM_seastate_hold/
+test_windinput/test_real_field/perfs
