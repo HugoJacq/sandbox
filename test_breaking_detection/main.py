@@ -279,7 +279,7 @@ class TestFlatField:
         Flat field should compute a 0. curvature which is > to threshold
         so no ridge should be detected !
         """
-        hist = simple_mapping(
+        hist, a_ = simple_mapping(
             flat_eta,
             uniform_velocity_fields["ux"],
             uniform_velocity_fields["uy"],
@@ -296,7 +296,7 @@ class TestFlatField:
         self, flat_eta, uniform_velocity_fields
     ):
         for extra in (True, False):
-            hist = simple_mapping(
+            hist, a_ = simple_mapping(
                 flat_eta,
                 uniform_velocity_fields["ux"],
                 uniform_velocity_fields["uy"],
@@ -329,7 +329,6 @@ class TestRidgeCase:
             method=0,
             threshold=-0.05,
             EXTRA_FILTER=False,
-            return_mask=True,
         )
         assert hist.sum() > 0, "expected at least one detected front pixel"
         bin_5 = np.digitize([5.0], BINS)[0] - 1
@@ -347,7 +346,7 @@ class TestRidgeCase:
         self, gaussian_ridge_eta, uniform_velocity_fields
     ):
         eta = gaussian_ridge_eta["eta"]
-        hist = simple_mapping(
+        hist, a_ = simple_mapping(
             eta,
             uniform_velocity_fields["ux"],
             uniform_velocity_fields["uy"],
