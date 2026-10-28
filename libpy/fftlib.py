@@ -392,6 +392,9 @@ def directional_wave_spectrum(
     $$ a^+ = \frac{1}{2} (\hat{\eta} + \frac{\hat{u}_{\parallel}}{\sqrt{gk} e^{kz} }), \qquad a^- = \frac{1}{2} (\hat{\eta} - \frac{\hat{u}_{\parallel}}{\sqrt{gk} e^{kz} })$$
 
 
+    Normalization is such that Parseval equality reads: 
+    $$ \frac{1}{\cal A} \int_{\cal A} \eta^2(x,y) dx dy = \int | \hat{\eta}(k_x,k_y) |^2 d k_x d k_y$$
+
     Parameters
     ----------
     eta : (ny, nx) array
