@@ -345,3 +345,284 @@ def convolve2D(psi1, psi2, norm=False, psi_s=1, kr=0, k_target=0, dk=1, K=0):
     return out
   else:
     return out, kmag
+
+
+def directional_wave_spectrum(
+    eta,
+    u,
+    v,
+    dx,
+    dy,
+    g=9.81,
+    z=None,
+    w=None,
+):
+    """
+    Estimate directional deep-water wave components from one snapshot.
+
+    The space-time Fourier transform of elevation is, 
+    $$\eta_t({\bm x_h}) = \int \int \hat{\eta}(\bm{k},\omega) e^{i(-\omega t + \bm{k}\cdot\bm{x}_h )} d\bm{k} d\omega$$
+
+    where $\bm{x}_h = (x,y)$
+
+    Then assuming linear deep-water waves, $\omega$ can take only two values: $\omega = \pm \sqrt{gk}$ where $k=\| \bm{k}\|$.
+    Associated complex amplitudes are $a^{\pm}_t (\bm{k}) = \hat{\eta}(\bm{k},\omega = \pm \sqrt{gk}) e^{i(\mp\omega t)}$, and elevation becomes
+
+    $$\eta_t({\bm x_h}) = \int (a^+_t(\bm k) + a^-_t(\bm k)) e^{i \bm{k}\cdot\bm{x}_h} d\bm{k} $$
+
+    Now if we consider a snapshot at fixed time $t=t_0$, then the \textit{spatial} Fourier transform is 
+    $$\eta_{t_0}({\bm x_h}) = \int \hat{\eta}_{t_0}(\bm k) e^{i \bm{k}\cdot\bm{x}_h} d\bm{k} $$
+
+    and we have $\hat{\eta}_{t_0}(\bm k) = a^+_{t_0}(\bm k) + a^-_{t_0}(\bm k)$. 
+    But we cannot compute $a^+$ and $a^-$ separately. The spectrum from one snapshot is then said to be "ambiguous". 
+    For example, from $\eta_{t=t_0} = \cos (k x )$ it is not possible to know if this wave elevation corresponds to forward or backward propagating wave. 
+
+    Additional information to disambiguate the spectrum can be provided by the horizontal velocity  spatial spectrum,
+
+    $$\bm{u}_{t_0}({\bm x_h},z) = \int (\hat{u}_{t_0}(\bm k,z),\hat{v}_{t_0}(\bm k,z)) e^{i \bm{k}\cdot\bm{x}_h} d\bm{k} $$
+
+    If we assume again linear deep-water waves, then the Fourier amplitude of velocity satisfies
+
+    $$  (\hat{u},\hat{v}) = a^+ \sqrt{gk} e^{kz} \frac{\bm k}{k} + a^- (-\sqrt{gk}) e^{kz} \frac{\bm k}{k} $$
+
+    Let us denote the projection of Fourier amplitudes on wave-vector by $\hat{u}_{\parallel} := (\hat{u},\hat{v})\cdot \frac{\bm k}{k} = \frac{\hat{u} k_x + \hat{v} k_y}{k} $ 
+
+    Combining this to $\hat{\eta} = a^+ + a^-$ leads to 
+
+    $$ a^+ = \frac{1}{2} (\hat{\eta} + \frac{\hat{u}_{\parallel}}{\sqrt{gk} e^{kz} }), \qquad a^- = \frac{1}{2} (\hat{\eta} - \frac{\hat{u}_{\parallel}}{\sqrt{gk} e^{kz} })$$
+
+
+    Normalization is such that Parseval equality reads: 
+    $$ \frac{1}{\cal A} \int_{\cal A} \eta^2(x,y) dx dy = \int | \hat{\eta}(k_x,k_y) |^2 d k_x d k_y$$
+
+    Parameters
+    ----------
+    eta : (ny, nx) array
+        Surface elevation [m].
+    u, v : (ny, nx) arrays
+        Horizontal velocities at z=0 [m/s].
+    dx, dy : float
+        Horizontal grid spacing [m].
+    g : float
+        Gravitational acceleration [m/s^2].
+    z : (nz,) array, optional
+        Vertical coordinates for a subsurface velocity field,
+        with z=0 at the mean surface and z<0 underwater.
+        Not used by this function; surface velocities are expected.
+    w : (ny, nx) array, optional
+        Surface vertical velocity [m/s], for diagnostics.
+
+    Returns
+    -------
+    dict
+        kx, ky, k, theta, omega:
+            Wavenumber, direction and frequency grids.
+        eta_hat:
+            Fourier coefficients of elevation.
+        a_plus, a_minus:
+            Complex amplitudes of the two propagation branches.
+        E_plus, E_minus:
+            Modal elevation powers [m^2].
+        diagnostics:
+            Useful linear-wave consistency metrics.
+    """
+    eta = np.asarray(eta, dtype=float)
+    u = np.asarray(u, dtype=float)
+    v = np.asarray(v, dtype=float)
+
+    if eta.shape != u.shape or eta.shape != v.shape:
+        raise ValueError("eta, u, and v must have identical shapes.")
+
+    ny, nx = eta.shape
+
+    # Remove means to eliminate the zero-wavenumber component.
+    eta = eta - np.mean(eta)
+    u = u - np.mean(u)
+    v = v - np.mean(v)
+
+    # Physical angular wavenumbers [rad/m].
+    kx_1d = 2 * np.pi * np.fft.fftfreq(nx, d=dx)
+    ky_1d = 2 * np.pi * np.fft.fftfreq(ny, d=dy)
+    kx, ky = np.meshgrid(kx_1d, ky_1d)
+
+    k = np.sqrt(kx**2 + ky**2)
+    omega = np.sqrt(g * k)
+
+    # Fourier-series coefficients: 
+    # normalization such that 1/A int_A eta^2 dxdy = int abs(eta_hat)^2 dkx dky 
+    
+    norm = 1/(2*np.pi)*np.sqrt(dx*dy/(nx*ny))
+    eta_hat = np.fft.fft2(eta) * norm
+    u_hat = np.fft.fft2(u) *norm
+    v_hat = np.fft.fft2(v) *norm
+
+    # Longitudinal velocity in Fourier space.
+    u_long_hat = np.zeros_like(eta_hat)
+    nonzero = k > 0
+
+    u_long_hat[nonzero] = (
+        kx[nonzero] * u_hat[nonzero]
+        + ky[nonzero] * v_hat[nonzero]
+    ) / k[nonzero]
+
+    # Branch decomposition.
+    factor = np.zeros_like(k)
+    factor[nonzero] = omega[nonzero] / (
+        g * k[nonzero]
+    )
+
+    a_plus = 0.5 * (
+        eta_hat + factor * u_long_hat
+    )
+    a_minus = 0.5 * (
+        eta_hat - factor * u_long_hat
+    )
+
+    # Elevation variance contributions per Fourier mode.
+    E_plus = np.abs(a_plus)**2
+    E_minus = np.abs(a_minus)**2
+
+    # Direction of the wavevector, measured from +x.
+    theta = np.arctan2(ky, kx)
+
+    # Optional vertical-velocity consistency diagnostic.
+    diagnostics = {}
+    # if w is not None:
+    #     w = np.asarray(w, dtype=float)
+    #     if w.shape != eta.shape:
+    #         raise ValueError("w must have the same shape as eta.")
+
+    #     w_hat = np.fft.fft2(w - np.mean(w)) / (nx * ny)
+
+    #     mask = nonzero
+    #     denominator = np.sqrt(np.sum(np.abs(u_long_hat[mask])**2))
+    #     numerator = np.sqrt(
+    #         np.sum(np.abs(w_hat[mask] + 1j*u_long_hat[mask])**2)
+    #     )
+    #     diagnostics["relative_w_residual"] = (
+    #         numerator / denominator if denominator > 0 else np.nan
+    #     )
+
+    return {
+        "kx": kx,
+        "ky": ky,
+        "k": k,
+        "theta": theta,
+        "omega": omega,
+        "eta_hat": eta_hat,
+        "u_long_hat": u_long_hat,
+        "a_plus": a_plus,
+        "a_minus": a_minus,
+        "E_plus": E_plus,
+        "E_minus": E_minus,
+        "diagnostics": diagnostics,
+    }
+
+
+
+def bin_directional_spectrum(
+    result,
+    nk=40,
+    ntheta=72,
+    kmin=None,
+    kmax=None,
+):
+    """
+    Bin the branch amplitudes into a directional wavenumber spectrum.
+
+    Returns
+    -------
+    k_edges : array
+        Radial wavenumber bin edges [rad/m].
+    theta_edges : array
+        Direction bin edges [rad].
+    spectrum : (nk, ntheta) array
+        Modal elevation variance per (k, theta) bin [m^2].
+        Divide by bin area dk*dtheta to obtain a density.
+    """
+    k = result["k"]
+    kx = result["kx"]
+    ky = result["ky"]
+    Eplus = result["E_plus"]
+    Eminus = result["E_minus"]
+    theta = result["theta"]
+
+    # One representative of each conjugate pair.
+    half_plane = (kx > 0) | ((kx == 0) & (ky > 0))
+    valid = half_plane & (k > 0)
+
+    if kmin is None:
+        kmin = np.min(k[valid])
+    if kmax is None:
+        kmax = np.max(k[valid])
+
+    k_edges = np.linspace(kmin, kmax, nk + 1)
+    theta_edges = np.linspace(-np.pi, np.pi, ntheta + 1)
+
+    kp = k[valid]
+    thp = theta[valid]
+
+    # Forward and reverse branches, each counted once.
+    k_all = np.concatenate([kp, kp])
+    theta_all = np.concatenate([
+        thp,
+        (thp + np.pi + np.pi) % (2*np.pi) - np.pi,
+    ])
+    energy_all = np.concatenate([
+        Eplus[valid],
+        Eminus[valid],
+    ])
+
+    spectrum, _, _ = np.histogram2d(
+        k_all,
+        theta_all,
+        bins=[k_edges, theta_edges],
+        weights=energy_all,
+    )
+
+    dk = np.diff(k_edges)[:, None]
+    dtheta = np.diff(theta_edges)[None, :]
+    spectrum_density = spectrum / (dk * dtheta)
+
+    return k_edges, theta_edges, spectrum_density
+
+
+def plot_directional_spectrum(
+    k_edges,
+    theta_edges,
+    spectrum_density,
+    cmap="viridis",
+):
+    """
+    Plot directional wavenumber spectrum in polar coordinates.
+
+    Parameters
+    ----------
+    k_edges : array (nk + 1,)
+        Wavenumber bin edges [rad/m].
+    theta_edges : array (ntheta + 1,)
+        Direction bin edges [rad].
+    spectrum_density : array (nk, ntheta)
+        Directional spectrum density.
+    """
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": "polar"},
+        constrained_layout=True,
+    )
+
+    mesh = ax.pcolormesh(
+        theta_edges,
+        k_edges,
+        spectrum_density,
+        shading="auto",
+        cmap=cmap,
+    )
+
+    ax.set_theta_zero_location("E")
+    ax.set_theta_direction(1)
+    ax.set_title("Directional wavenumber spectrum")
+
+    cbar = fig.colorbar(mesh, ax=ax, pad=0.1)
+    cbar.set_label(r"$E(k,\theta)$")
+
+    return fig, ax
