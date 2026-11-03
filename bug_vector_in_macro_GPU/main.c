@@ -5,7 +5,7 @@ vector windmask[];
 #define a_baro(f,k) (1.0*(-G*(f[k]-f[k-1])/Delta \
                 - (p0/rho)*windmask.x[]*(f[k+1]-2.*f[k]+f[k-1])/sq(Delta)))
 
-#include "grid/multigrid.h"
+#include "grid/cuda/multigrid.h"
 #include "layered/hydro.h"
 #include "layered/nh.h"
 
