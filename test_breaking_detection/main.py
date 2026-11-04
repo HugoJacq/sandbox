@@ -99,18 +99,10 @@ ax[1].set_title("radial gaussian eta")
 plt.colorbar(s, ax=ax)
 
 jslice = 0  # ny // 2
-fig2, axes2 = plt.subplots(1, 2, figsize=(9, 4), constrained_layout=True, dpi=100)
-ax2 = axes2.flatten()
-ax2[0].plot(x, gaussian_ridge_eta["eta"][jslice, :])
-ax2[0].set_ylim([0, A + 1])
-ax2[0].set_title(f"gaussian 1D (j={jslice})")
-ax2[1].plot(x, radial_gaussian_bump_eta["eta"][ny // 2, :], c="k", label="mid")
-ax2[1].set_ylim([0, A + 1])
-ax2[1].plot(
-    x, radial_gaussian_bump_eta["eta"][ny // 2 + 2, :], c="darkblue", label="ny//2 + 2"
-)
-ax2[1].set_ylim([0, A + 1])
-ax2[1].set_title("gaussian 2D")
+fig2, ax2 = plt.subplots(1, 1, figsize=(4, 4), constrained_layout=True, dpi=100)
+ax2.plot(x, gaussian_ridge_eta["eta"][jslice, :])
+ax2.set_ylim([0, A + 1])
+ax2.set_title("gaussian 1D slice from ridge)")
 # =================================
 # testing detect_ridges()
 # =================================
@@ -233,21 +225,21 @@ rgmax, rgmin = detect_ridges(radial_gaussian_bump_eta["eta"])
 
 ax[0].contour(x, x, gmin, colors="b")
 ax[0].contour(x, x, gmax, colors="r")
-ax2[0].scatter(
+ax2.scatter(
     x,
     np.where(gmin[ny // 2, :] < 0, gaussian_ridge_eta["eta"][jslice, :], np.nan),
     marker="x",
     c="cyan",
     label="curv < 0",
 )
-ax2[0].scatter(
+ax2.scatter(
     x,
     np.where(gmax[ny // 2, :] > 0, gaussian_ridge_eta["eta"][jslice, :], np.nan),
     marker="x",
     c="r",
     label="curv > 0",
 )
-ax2[0].scatter(
+ax2.scatter(
     x,
     np.where(gmin[ny // 2, :] < -0.05, gaussian_ridge_eta["eta"][jslice, :], np.nan),
     marker="x",
@@ -262,8 +254,7 @@ ax[1].contour(x, x, rgmin, colors="b")
 ax[1].contour(x, x, rgmax, colors="r")
 ax[1].set_aspect(1)
 ax[0].set_aspect(1)
-ax2[0].legend()
-ax2[1].legend()
+ax2.legend(loc="upper left")
 
 
 print("Tests for detect_ridges() passed !")
@@ -327,7 +318,7 @@ class TestRidgeCase:
             delta=1.0,
             bins=BINS,
             method=0,
-            threshold=-0.05,
+            threshold=-0.05,  # - 0.05
             EXTRA_FILTER=False,
         )
         assert hist.sum() > 0, "expected at least one detected front pixel"
@@ -385,7 +376,7 @@ rgmask = ridgefield.test_detected_front_velocity_lands_in_expected_bin(
 ridgefield.test_threshold_that_excludes_ridge_gives_zero_histogram(
     gaussian_ridge_eta, uniform_velocity_fields
 )
-print("Tests simple_mappting() passed!")
+print("Tests simple_mapping() passed!")
 
 
 """
@@ -395,18 +386,18 @@ Mask of detected ridge is plotted on the figure in pink
 ax[0].pcolormesh(
     x,
     x,
-    np.ma.masked_where(gmask, np.ones(gmask.shape)),
+    np.where(gmin[ny // 2, :] < -0.05, gaussian_ridge_eta["eta"], np.nan),
     cmap="cool",
-    vmax=1,
     vmin=0,
+    vmax=1,
 )
 ax[1].pcolormesh(
     x,
     x,
-    np.ma.masked_where(rgmask, np.ones(gmask.shape)),
+    np.where(rgmin < -0.05, radial_gaussian_bump_eta["eta"], np.nan),
     cmap="cool",
-    vmax=1,
     vmin=0,
+    vmax=1,
 )
 
 
