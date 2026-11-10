@@ -61,7 +61,8 @@ from breaking import (
 )
 
 
-path = "/home/jacqhugo/basilisk/wiki/sandbox/hugoj/breaking_strat/N512_40_RE40000_TiniZl_remap1.0_cuda_smooth/"
+# path = "/home/jacqhugo/basilisk/wiki/sandbox/hugoj/breaking_strat/N512_40_RE40000_TiniZl_remap1.0_cuda_smooth/"
+path = "/home/jacqhugo/basilisk/wiki/sandbox/hugoj/test_windinput/test_real_field/PM_seastate_hold.cuda_dev/"
 myfile = "out.nc"
 seltime = slice(-4, -1, 1)
 L0 = 200
@@ -116,6 +117,8 @@ dy = float(ds.y[1] - ds.y[0])
 # r_max: gap allowed between an object's edges in consecutive frames (metres)
 r_max = 3 * max(dx, dy)  # starting guess, I need to tune it
 
+
+labels, n = label_periodic(dmask.mask.isel(time=10), structure)
 # run the tracker
 crest_mask_labelled, events = btrack(
     dmask.mask,
@@ -131,13 +134,9 @@ crest_mask_labelled, events = btrack(
 objects_infos = track_table(events, nt)
 
 # ===========================================
-print("Step 3: Compute the characteristics of a breaking")
+print("Step 3: Compute the characteristics of the breakings")
 print(" - length\n - speed\n - direction")
 
-print(objects_infos)
-print(crest_mask_labelled)
-
-raise Exception
 
 # add theses infos to 'object_infos'
 for target in objects_infos.keys():
@@ -147,10 +146,6 @@ for target in objects_infos.keys():
     speeds = np.zeros((iend - istart, 2))
     directions = np.zeros((iend - istart, 2))
     barys = np.zeros((iend - istart, 2))
-
-    # print("id object", target)
-    # print("object infos", objects_infos[target])
-    # print("istart", istart)
 
     # this loop needs to be // later
     for it in range(istart, iend):
@@ -168,6 +163,10 @@ for target in objects_infos.keys():
         # step 3c: position
         barys[obj_it] = bbarycenter(target, snapshot)
 
+    objects_infos[target]["length"] = lengths
+    objects_infos[target]["speeds_currents"] = speeds
+    objects_infos[target]["position"] = barys
+
     Lx, Ly = np.max(lengths, axis=0)
     avg_speed = np.mean(speeds, axis=0)
     print("object n° %d" % target)
@@ -175,51 +174,14 @@ for target in objects_infos.keys():
     print(" avg_speed = %0.1f" % avg_speed[0])
     print(" avg_direction = %0.1f" % avg_speed[1])
 
-raise Exception
-
-# TEST =========================================
-if True:
-    print("Compute a length of a breaking")
-
-    # Step 0: working setup
-    target = 591  # the object
-    itarget = 586  # the snapshot time index
-    snapshot = crest_mask_labelled.isel(time=itarget)
-    print("working at it=%d on object %d" % (itarget, target))
-
-    sizes = length1(target, snapshot.values)
-
-    print(f"Ny,Nx = {sizes}")
-    print("Ly,Lx = %f m, %f m" % (sizes[0] * dy, sizes[1] * dx))
-
-    # Test on a time serie for 1 breaker
-    if True:
-        istart = objects_infos[target]["birth"]
-        iend = objects_infos[target]["death"]
-        print("start = %d, end = %d" % (istart, iend))
-        l_sizes = np.zeros((2, iend - istart))
-        for it in range(istart, iend):
-            sizes = length1(target, crest_mask_labelled.isel(time=it).values)
-            l_sizes[0, it - istart] = sizes[0]
-            l_sizes[1, it - istart] = sizes[1]
-
-        lifetime = np.arange(istart, iend)
-        fig, ax = plt.subplots(1, 1, figsize=(5, 3), constrained_layout=True, dpi=200)
-        ax.plot(lifetime, l_sizes[0, :] * dx, c="k", label=r"$L_y$")
-        ax.plot(lifetime, l_sizes[1, :] * dy, c="b", label=r"$L_x$")
-        ax.set_xlabel("timestep")
-        ax.set_ylabel("size (m)")
-        ax.legend()
-
-    plt.show()
-
 
 # TODO:
-# - save the trajectory of barycenter of the breaking
-# - compute characteristics of breaking (length, speed) and their evolution in the life of the object
+# [x] save the trajectory of barycenter of the breaking
+# [x] compute characteristics of breaking (length, speed) and their evolution in the life of the object
 #
 # performance:
 # - for each breaker, work on a small domain around it ?
+# - compute characteristic of breakers in //
 #
 # length of a snapshot:
 # - count the number of pixel that have the id of the breaking ?

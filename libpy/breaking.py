@@ -175,7 +175,7 @@ def simple_mapping(
         ((ux_a**2 + uy_a**2) ** 0.5).compressed(), bins=bins, density=False
     )
 
-    return hist, a_
+    return hist, np.bitwise_not(a_)
 
 
 def simple_mapping_parallel(
@@ -246,7 +246,6 @@ def simple_mapping_parallel(
                 "threshold": float(threshold),
             },
         )
-
         out["mask"].attrs["long_name"] = "crest mask (1 = hidden, 0 = crest)"
 
         if output_file is not None:
@@ -385,16 +384,15 @@ def btrack(
         return tracks, events
 
     next_id, prev, out = 1, None, []
-    nframes = frames.sizes["t"]
+    nframes = frames.sizes["time"]
 
     for t in range(nframes):
-        mask = frames.isel(t=t).values.astype(bool)
+        mask = frames.isel(time=t).values.astype(bool)
 
         ny, nx = mask.shape
         box = (ny * dy, nx * dx)
 
         labels, n = label_periodic(mask, structure)
-
         ys, xs = np.nonzero(mask)
         pts = np.column_stack([ys * dy, xs * dx])
         lab = labels[ys, xs]
