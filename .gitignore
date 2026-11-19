@@ -370,3 +370,6 @@ test_windinput/test_forcing/report_gauss_seidel_gpu_vs_cpu_GLM5.3.md
 test_windinput/test_forcing/report_pid_tuning.md
 test_windinput/test_forcing/report_volume_drift_gpu.md
 test_windinput/test_forcing/volume_conservation_gpu.md
+
+breaking_strat_hold/breaking_strat.cuda/
+breaking_strat_hold/breaking_strat/
