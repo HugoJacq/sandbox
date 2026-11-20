@@ -158,7 +158,6 @@ benchmark_cpu_gpu/results_bench_local_turbulence_old
 benchmark_cpu_gpu/runJZ_gpu.slurm
 breaking_strat/ml_breaking_strat.cuda/
 lib/diffusionRheo.h
-lib/wind_forcing.h
 test_hpc_workflow/
 test_windinput/counting_limiters/
 test_windinput/energy.py
