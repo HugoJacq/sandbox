@@ -372,3 +372,6 @@ test_windinput/test_forcing/volume_conservation_gpu.md
 
 breaking_strat_hold/breaking_strat.cuda/
 breaking_strat_hold/breaking_strat/
+
+object_breaker/breaking.cuda/
+object_breaker/breaking/
