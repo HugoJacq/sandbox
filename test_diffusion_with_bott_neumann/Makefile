@@ -35,8 +35,8 @@ T_cst_delta.cuda.tst: CFLAGS += -DNEUMANN0 -DT_CST -DDIFF_DELTA
 
 T_cst_notperiodic_delta.c: diff_test.c
 	ln -sf diff_test.c T_cst_notperiodic_delta.c
-T_cst_notperiodic_delta.tst: CFLAGS += -DNEUMANN0 -DT_CST -DNOT_PERIODIC -DDIFF_DELTA
-T_cst_notperiodic_delta.cuda.tst: CFLAGS += -DNEUMANN0 -DT_CST -DNOT_PERIODIC -DDIFF_DELTA
+T_cst_notperiodic_delta.tst: CFLAGS += -DNEUMANN0 -DT_CST -DNOT_PERIODIC 
+T_cst_notperiodic_delta.cuda.tst: CFLAGS += -DNEUMANN0 -DT_CST -DNOT_PERIODIC 
 
 # isolated vertical-diffusion test (see simple_iso.c)
 simple_iso.c: diff_test.c

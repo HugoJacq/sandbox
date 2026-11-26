@@ -387,7 +387,7 @@ int main()
   N = 128;
   nl = 64;
   G = g_;
-  lam = 2*pi/k_*L0;
+  lam = 2*pi/k_;
   
   omega = sqrt(g_*k_);
   cp = omega/k_;

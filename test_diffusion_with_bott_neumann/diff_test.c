@@ -14,18 +14,9 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia make
 */
 #include "grid/multigrid.h"
 #include "layered/hydro.h"
-#if !MINIMAL
 #include "layered/nh.h"
-#if !NO_REMAP
-#include "layered/remap.h"
-#endif
-#endif
 #include "layered/perfs.h"
-#if DIFF_DELTA
-# include "hugoj/lib/diffusionH_delta.h"
-#else
-# include "hugoj/lib/diffusionH.h"
-#endif
+#include "hugoj/lib/diffusionH.h"
 #include "bderembl/libs/netcdf_bas.h"
 
 double tend = 3600.0;
@@ -58,12 +49,8 @@ int main(int argc, char *argv[])
   N = 1; 
   nl = 30;
   G = 9.81;
-#if !MINIMAL
-  theta_H = 0.51;
-  CFL_H = 8.;
-#endif
-  CFL = 0.8;
-  
+  dt=0.1;
+  DT=0.1;
   #if HDIFF
   N = 8;
   #endif
@@ -103,12 +90,6 @@ int main(int argc, char *argv[])
 
 event init(i =  0) {
 
-#if DIFF_DELTA
-  fprintf (stderr, "## diffusionH_delta.h version %s\n", DIFFUSIONH_DELTA_VERSION);
-#else
-  fprintf (stderr, "## diffusionH.h version %s\n", DIFFUSIONH_VERSION);
-#endif
-
   foreach() {
     zb[] = -H0;
     eta[] = 0.;
@@ -119,9 +100,7 @@ event init(i =  0) {
       z += h[]/2.;
       foreach_dimension()
         u.x[] = 0.;
-#if !MINIMAL
       w[] = 0.;
-#endif
     #if T_CST
       T[] = Ts;
     #else
@@ -131,13 +110,7 @@ event init(i =  0) {
     }
   }
 
-  create_nc(
-#if MINIMAL
-           {zb, h, u, eta, T},
-#else
-           {zb, h, u, w, eta, T},
-#endif
-           "out.nc");
+  create_nc({zb, h, u, w, eta, T},"out.nc");
 }
 
 /**

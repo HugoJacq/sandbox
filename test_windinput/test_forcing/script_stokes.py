@@ -21,8 +21,7 @@ T0 = 2 * np.pi / np.sqrt(g * k)
 if True:
     data = {
         "noforcing": np.loadtxt("stokes/out", skiprows=1),
-        # "current_exactforced": np.loadtxt("../exact_forcing/out", skiprows=1),
-        # "current_forced": np.loadtxt("../linear_wave_wind_input/out", skiprows=1),
+        "current_forced": np.loadtxt("hold_stokes/out", skiprows=1),
     }
     time = {}
     ke = {}
@@ -43,6 +42,12 @@ if True:
         color="pink",
         label="E (no forcing)",
     )
+    ax.semilogy(
+        time["current_forced"],
+        E["current_forced"] / E0,
+        color="orange",
+        label="E (hold)",
+    )
     # ax.semilogy(time["current_noforcing"], Eth / E0, color="r", label=r"$E(t)=E_0 e^{-2 \nu k^2 t}$")
     ax.set_xlabel("t/T0")
     ax.set_ylabel("E")
@@ -50,13 +55,13 @@ if True:
     # ax.set_ylim([1.2e-6, 1.28e-6])
     ax.legend()
     ax.grid(axis="y", which="both")
-    plt.savefig("energy.pdf", dpi=300)
+    plt.savefig("energy_stokes.png", dpi=300)
     # plt.show()
 
 # ==================================
 # make a movie of surface elevation
 # ==================================
-if True:
+if False:
     file = "stokes/out.nc"
     ds = xr.open_dataset(file)
     ds = ds.isel(y=0)
@@ -91,5 +96,5 @@ if True:
 
     os.system("rm movie.mp4")
     os.system(
-        "ffmpeg -framerate 30 -i ./tmp/eta_profile_t%03d.png -c:v libx264 -pix_fmt yuv420p -r 30 movie.mp4"
+        f"ffmpeg -framerate {fps} -i ./tmp/eta_profile_t%03d.png -c:v libx264 -pix_fmt yuv420p movie.mp4"
     )

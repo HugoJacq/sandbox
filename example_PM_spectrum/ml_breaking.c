@@ -1,7 +1,7 @@
 /**
 # Wave breaking field decay
 
-This example shows how to use [spectrum.h](../lib/spectrum.h).
+This example shows how to use [spectrum.h](https://basilisk.fr/sandbox/hugoj/lib/spectrum.h).
 There is no stratification, and no forcing (wave decay).
 
 The initial sea state is chosen to have a azimuthal integrated spectrum close to
@@ -9,7 +9,7 @@ the Pierson-Moscowitz spectrum representative of a developped sea.
 
 The shape of this spectrum shows a peak at $k_p$ that we set as $k_p=10\pi/L$
 with $L$ the domain size. The peak Reynolds number is 
-$Re_p = \sqrt{g\lambda_p}/\nu = 3.17 \times 10^7$. **SP: this is not a Reynolds number**
+$Re_p = c_p \lambda_p/\nu = 4 \times 10^5$. Only vertical viscosity is used.
 
 ![Evolution of the surface elevation](ml_breaking/eta.mp4)(loop width="50%")
 
@@ -27,36 +27,15 @@ $Re_p = \sqrt{g\lambda_p}/\nu = 3.17 \times 10^7$. **SP: this is not a Reynolds 
 /** Let us define some functions */
 #define g_ 9.81
 #include "hugoj/lib/spectrum.h"
+#include "hugoj/lib/common_waves.h"
 
 /**
-## PARAMETERS
+## Parameters
 
-**SP: Some of your parameters are redundant/not used??**
 */
 
-// -> Initial conditions
-double P = 0.02;         // energy level (estimated so that kpHs is reasonable)
-int coeff_kpL0 = 10;     // kpL0 = coeff_kpL0 * pi
-int N_mode = 32;         // Number of modes in wavenumber space
-int N_power = 5;         // directional spreading coeff
-// -> Domain definition
-int N_grid = 9;          // 2^N_grid : number of x and y gridpoints
-double L = 200.0;        // domain size
-int N_layer = 15;        // number of layers
-double kp;               // peak wave number
-double h0 = 100.0;       // depth of water
-// -> Runtime parameters
-double tend = 200.0;        // end time of simulation
-// -> physical properties
-
-/**
- **SP: this is way too small. Did you compute the corresponding wave Reynolds number?**
- */
-double nu0 = 0.000025;      // Viscosity for vertical diffusion
-
-int RANDOM = 2;             // For random number generator
-double thetaH = 0.5;        // theta_h for dumping fast barotropic modes
-
+int coeff_kpL0;     
+double kp, h0, tend, RE, E0;
 
 // diag
 double *u_profile;
@@ -65,15 +44,19 @@ double dt_mean = 5;  // s
 /* Main program */
 int main(int argc, char *argv[])  
 {
-  
-  kp = pi * coeff_kpL0 / L; // kpL=coeff x pi peak wavelength
-  
-  L0 = L;
-  nu = nu0;
-  N = 1 << N_grid; // 1*2^N_grid
-  nl = N_layer;
+  P = 0.02;                     // energy level
+  coeff_kpL0 = 5;               // kpL0 = coeff_kpL0 * pi
+  N_mode = 32;                  // Number of modes in wavenumber space
+  N_power = 5;                  // directional spreading coeff
+  kp = 2.*pi * coeff_kpL0 / L0; // kpL=coeff x pi peak wavelength
+  tend = 200.0;                 // end time of simulation
+  RE = 40000;                   // Reynolds number
+  L0 = 200.0;                   // domain size
+  h0 = 100.0;                   // depth of water
+  nu = sqrt(g_/kp)*2*PI/kp/RE;  // Viscosity for vertical diffusion
+  N = 512;
+  nl = 15;
   G = g_;
-  theta_H = thetaH;
   CFL_H = 1;
   TOLERANCE = 1e-4;
 
@@ -82,7 +65,7 @@ int main(int argc, char *argv[])
   periodic (right);
   periodic (top);
   
-  // allocate diag
+  /** Allocate a simple diagnostic array */
   u_profile = (double*)calloc(nl, sizeof(double));
    
   fprintf (stderr, "Read in parameters!\n");
@@ -97,28 +80,24 @@ event init (i = 0) {
 
   /** Generate linearly spaced kx, ky according to specified # of modes, and
       then interpolated on a cartesian grid to get F(kx,ky). */
-  T_Spectrum spectrum = spectrum_gen_linear (N_mode, N_power, L, P, kp);
+  T_Spectrum spectrum = spectrum_gen_linear (N_mode, N_power, L0, P, kp);
 
-  /** set eta and h */
-  foreach (cpu) {
-    zb[] = - h0;
-    eta[] = wave (x, y, spectrum);
+  /** set eta */
+  initial_condition_wave_fft (eta, spectrum, N);
+
+  /** set h*/
+  geometric_beta (1., true); // if !=0, varying layer thickness
+  foreach(cpu) {
+    zb[] = -h0;
     double H = eta[] - zb[];
-    foreach_layer()
-      h[] = H*beta[point.l];
-  }
-  /** set currents */
-  foreach (cpu) {
-    double z = zb[];
     foreach_layer() {
-      z += h[]/2.;
-      coord wu = wave_u (x, y, z, spectrum);
-      u.x[] = wu.x;
-      u.y[] = wu.y;
-      w[]   = wu.z;
-      z += h[]/2.;
-    }
+      h[] = H*beta[point.l];
+    } 
   }
+  
+  /** set currents. This is done using FTTs using the GSL lib. See [spectrum.h](https://basilisk.fr/sandbox/hugoj/lib/spectrum.h)*/
+  initial_condition_u_fft (u, spectrum, -h0, N);
+
   fprintf (stderr,"Done initialization!\n");
   free_spectrum (spectrum);
 }
@@ -141,7 +120,12 @@ event logfile (i++)
     }
   }
   double gpe0 = - sq(L0)*G*sq(h0)/2.;
-  fprintf (stderr, "%g %g %g\n", t, ke/2., G*gpe - gpe0);
+  ke /= 2.;
+  gpe = G*gpe - gpe0;
+  double Et = ke + gpe;
+  if (i==0)
+    E0 = Et;
+  fprintf (stderr, "%g %g %g %g\n", t, ke/E0, gpe/E0, Et);
 }
 
 /**
@@ -149,7 +133,7 @@ event logfile (i++)
 
 Diagnostic of the layer averaged zonal velocity.
 
-**SP: I don't understand what you are doing here...**. */
+*/
 
 event compute_horizontal_avg (t += dt_mean) {
   foreach_layer() {
@@ -173,10 +157,8 @@ event write_diag (t = 0, t += dt_mean)
     u_profile[i] = 0.0;
 }
 
-/**
-## Movies */
-
-event movies (t += 4./24.) { //  2.*24.
+/** Movies */
+event movies (t += 4./24.) { 
   output_ppm (eta,
 #if SHOW  // do not use in "batch" mode: very slow somehow
               fps = 24,
@@ -193,7 +175,7 @@ event movies (t += 4./24.) { //  2.*24.
               n = max(N, 512), linear = true, map=gray);
 }
 
-// Clean for my diag of layer avg
+/** Clean for my diag of layer avg */
 event cleanup (t = end) {
   free (u_profile);  
 }
@@ -244,7 +226,7 @@ calls    total     self   % total   function
 ~~~
 
 This simulation runs in ~10 minutes on an RTX 4090 (for a resolution
-of 512^2^ i.e. `N_grid = 9`).
+of 512^2^).
 
 Profiling output (`CFLAGS=-DTRACE=2`) gives:
 
@@ -266,5 +248,4 @@ Profiling output (`CFLAGS=-DTRACE=2`) gives:
 
 * add bview snapshot when using CPU
 * crashes at after some time as passed ? (for `N_grid = 10`, this can be fixed with the new version of the RHS of the multilayer).
-* Initialisation is very slow: use FFTs!
 */

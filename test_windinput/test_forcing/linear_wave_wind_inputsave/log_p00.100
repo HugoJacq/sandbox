@@ -1,0 +1,8 @@
+T0 = 2.506628, lam=1.000000, g_=1.000000,omega=2.506628,nu=1.99471e-05
+INITIAL eta mean = 0.0000000000, variance = 0.0000012665
+initial p0 = 0.006250
+target Et = 0.00126619
+INITIAL eta mean = 0.0000000000, variance = 0.0000012665
+initial p0 = 0.101423
+target Et = 0.00126619
+mv: cannot stat 'log': No such file or directory

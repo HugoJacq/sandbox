@@ -14,9 +14,7 @@ const double g_ = 9.81;        // [m.s-2] Gravity
 #include "grid/multigrid.h"
 
 // -> Forcing
-double p0 = 50.; // Pa, amplitude of windforcing
-double pp0 = 50.; // first guess
-double rho = 1000.;
+double p0, pp0, rho; 
 #if HOLD_FORCING || CST_FORCING
 //#define a_baro(eta,i) \
   // (1.0 * ( \
@@ -45,29 +43,10 @@ These parameters are changed by the values in the namelist
 Dimensions : [Length, Time, Temperature, Energy, mass]
 */
 char file_out[20] = "out.nc"; // file name of output
-// -> Initial conditions
-double P = 0.02;               // energy level (estimated so that kpHs is reasonable)
-int coeff_kpL0 = 5;           // kpL0 = coeff_kpL0 * pi
-int N_mode = 32;              // Number of modes in wavenumber space
-int N_power = 5;              // directional spreading coeff
-int F_shape = 0;              // shape of the initial spectrum
-double kp=2*PI;                    // peak wave number
-double Tp;
 
-// -> Domain definition
-int N_grid = 512;              // number of x and y gridpoints
-int N_layer = 15;              // number of layers
-int N_zlayer = 32;            // for fft init (must be power of 2)
-double L = 200.;             // [m] domain size
-double h0 = 100.0;              // [m] depth of water
-// -> Runtime parameters
-double tend = 5.0;            // (x Tp) end time of simulation
-// -> saving outputs
-double dtout = 1.0;           // [s] dt for output in netcdf
-double smalltime = 1e-10;     // [s] small time increment
-// -> physical properties
-double Re = 20000.;            // Reynolds number Re = sqrt(g*lambda**3)/nu
-double thetaH = 0.503;        // theta_h for dumping fast barotropic modes
+double coeff_kpL0, kp, h0, tend, NT0;
+double dtout, smalltime, Re;
+
 
 double etavar_i = 0.;
 double mean_eta_i = 0.;
@@ -126,27 +105,49 @@ void energy_stats (double *mean, double *variance, double *pe, double *ke)
 
 int main(int argc, char *argv[])  
 {
-  kp = 2*PI * coeff_kpL0 / L; // kpL=coeff x 2pi x domain size
+  // -> Domain definition
+  L0 = 200.;                // [m] domain size
+  h0 = 100.;                // [m] depth of water
+  N = 512;                  // Number of x and y gridpoints
+  nl = 15;                  // Number of layers
+  
+  // -> spectrum.h parameters
+  P = 0.02;                     // energy level (estimated so that kpHs is reasonable)
+  coeff_kpL0 = 5.;              // kpL0 = coeff_kpL0 * pi
+  kp = 2*PI * coeff_kpL0 / L0;  // kpL=coeff x 2pi x domain size
+  N_mode = 32;                  // Number of modes in wavenumber space
+  N_power = 5;                  // directional spreading coeff
+  F_shape = 0;                  // shape of the initial spectrum
+  N_zlayer = 32;                // for fft init (must be power of 2)
 
-  L0 = L;
-  nu = sqrt(g_*kp)*2*PI/kp/Re; // Re = cp.lambdap/nu = omegap/kp*lampbdap/nu
-  N = N_grid; 
-  nl = N_layer;
+  // -> physical properties
+  Re = 20000.;
+  nu = sqrt(g_/kp)*2*PI/kp/Re; // Re = cp.lambdap/nu = omegap/kp*lampbdap/nu
   G = g_;
-  theta_H = thetaH;
+  rho = 1000.;
+
+  // -> runtime paramters
+  NT0 = 100.0;               // number of peak period to run
+  tend = NT0*T0;            // end of simulation
+  dtout = 1.;            // [s] dt for output in netcdf
+  smalltime = 1e-10;        // [s] small time increment
+  
+  // -> numerics
   CFL_H = 1; 
   CFL=0.5;
   DT = 0.01;
+  theta_H = 0.503;        // theta_h for dumping fast barotropic modes
   NITERMIN = 3;
-  Tp = 2*PI/sqrt(g_*kp);
-  tend = tend*Tp;
-
+  
   #if CST_FORCING
   p0 *= 10; // wave growth: p0 = ptilde*pref
   #endif
 
   /** If the dynamic forcing is used, we use PID correction.
     */
+  pp0 = 50.;  // first guess
+  p0 = pp0;   // dp0 = 0. at t=0
+
   dE_f = 0.;
   sum_f = 0.;
   sum_abs_f = 0.;
@@ -168,35 +169,17 @@ int main(int argc, char *argv[])
   periodic (left);
 
   dtmax = DT;
-
+  
   run();
 }
 
-/**
- Here a function is defined: it computes the variance and the mean of the
- surface elevation in this 2D model.
- */
-// void eta_stats (double *mean, double *variance)
-// {
-//   double sum = 0., var = 0.;
-//   double Nterms = pow (N, dimension);
-//
-//   foreach (reduction(+:sum))
-//     sum += eta[];
-//   double m = sum/Nterms;
-//
-//   foreach (reduction(+:var))
-//     var += sq(eta[] - m);
-//
-//   *mean = m;
-//   *variance = var/Nterms;
-// }
 
+/** ## Initialization */
 event init(i =  0) {
     
   /** We generate a spectrum using spectrum.h */
   T_Spectrum spectrum;
-  spectrum = spectrum_gen_linear(N_mode, N_power, L, P, kp);  
+  spectrum = spectrum_gen_linear(N_mode, N_power, L0, P, kp);  
 
   /** set eta */
   initial_condition_wave_fft (eta, spectrum, N);
@@ -205,12 +188,13 @@ event init(i =  0) {
   geometric_beta (1/3., true); // if !=0, varying layer thickness
   foreach(cpu) {
     zb[] = -h0;
+    //fprintf(stderr, "i %d j %d eta %f\n", point.i, point.j, eta[]);
     double H = eta[] - zb[];
     foreach_layer() {
       h[] = H*beta[point.l];
     } 
   }
-
+  
   /** set currents */
   initial_condition_u_fft (u, spectrum, -h0, N, N_zlayer);
 
@@ -226,12 +210,10 @@ event init(i =  0) {
 
   //initial energy of wavefield
   energy_stats(&mean_eta_i, &etavar_i, &Ep_i, &Ek_i);
-
   fprintf(stderr, "Initial Hskp = %f\n", 4*sqrt(etavar_i)*kp);
   fprintf(stderr, "target variance = %f\n", etavar_i);
   fprintf(stderr, "target Hs = %f\n", 4*sqrt(etavar_i));
   fprintf(stderr, "target Et = %g\n", Ep_i+Ek_i);
-
   fprintf (stderr,"Done initialization!\n");
 }
 
@@ -267,11 +249,6 @@ event update_p0 (i++)
   */
 
   /** Computing the error on wave energy */
-  // double etam = 0.;
-  // double etavar_current = 0.;
-  // eta_stats (&etam, &etavar_current);
-  // double dE = rho*G*(etavar_i - etavar_current)*sq(L0);
-
   double etam = 0., etavar_current = 0., pe = 0., ke = 0.;
   energy_stats (&etam, &etavar_current, &pe, &ke);
   double dE = (Ek_i+Ep_i) - (pe + ke);
@@ -300,7 +277,7 @@ event update_p0 (i++)
   sum_abs_f += (fabs(sum) - sum_abs_f) * dt / tau_f;
   double sum_den = (sum_f >= 0. ? 1. : -1.) * fmax (fabs(sum_f), 0.1*sum_abs_f);
   /**
-  ## PID Control
+  ### PID Control
 
   p0 = 1/sum * K1( dE + 1/Ti*int_t dE dt + Td*dE/dt )
 
@@ -332,7 +309,8 @@ event update_p0 (i++)
   */
   double dp0 = rhs/sum_den;
   p0 = pp0 + dp0;
-
+  
+  fprintf(stderr, "rhs=%f, pp0=%f, dp0=%f \n", rhs, pp0, dp0);
   /**
   p0 limiter
   */
@@ -341,14 +319,6 @@ event update_p0 (i++)
 
   //p0 = 1.0;
 
-  //p0 = -rho*G*dE*pow(L0,dimension)/relax_dt / sum;
-  // fprintf(stderr,
-  //       "i=%d dE=%g predicted=%g sum=%g relax_dt=%g p0=%g\n",
-  //       i, dE,-p0*sum*relax_dt, sum, relax_dt, p0);
-  // if (i%10==0){
-  //   fprintf(stderr, "i=%d etam=%.3e var=%.6e dE=%g sum=%g sum_den=%g p0=%g\n",
-  //       i, etam, etavar_current, dE, sum, sum_den, p0);
-  // }
   fprintf(stderr, "i=%d etam=%.3e var=%.6e dE=%g Et=%g sum=%g sum_den=%g p0=%g\n",
         i, etam, etavar_current, dE, pe+ke,  sum, sum_den, p0);
 
@@ -385,9 +355,12 @@ event logfile (i++; t <= tend) // target: at least 300*T0
 }
 
 /** dump outputs */
-event output(i++)
+event output(t+=1.0)
 {
-  if (i%10==0){
-    write_nc();
-  }
+  write_nc();
+}
+
+event save_end(t=tend)
+{
+  dump(file = "restart");
 }

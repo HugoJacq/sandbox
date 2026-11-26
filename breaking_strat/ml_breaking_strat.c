@@ -170,7 +170,7 @@ event init(i =  0) {
     /** set eta */
     initial_condition_wave_fft (eta, spectrum, N);
 
-    /** set eta and h*/
+    /** set h*/
     geometric_beta (1., true); // if !=0, varying layer thickness
     foreach(cpu) {
       zb[] = -h0;
