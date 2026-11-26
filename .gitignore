@@ -142,7 +142,6 @@ test_spectrum.h/parceval/
 multilayer_stratified/N256_cubed/
 multilayer_stratified/diffusion.h
 multilayer_stratified/hydro.h
-multilayer_stratified/namelist.toml
 test_diffusion_with_bott_neumann/diff_test/
 test_diffusion_with_bott_neumann/diffusion.h
 test_diffusion_with_bott_neumann/hydro.h

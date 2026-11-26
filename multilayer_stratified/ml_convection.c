@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   L0 = L;
   nu = nu0;
   diff_T = nu0/Pr;
-  N = N_grid; // 1*2^N_grid
+  N = N_grid; 
   nl = N_layer;
   G = g_;
   theta_H = thetaH;
@@ -204,7 +204,7 @@ event init(i =  0) {
 Initial temperature profile is linear. We add a white noise in the upper layers
 to trigger the instability.
 */
-      T[] = Tini(z) + Trand * noise() * exp(z/h0) ;
+      T[] = Tini(z) + Trand * noise() * exp(-z/h0) ;
       z += h[]/2.;
     }
   }
